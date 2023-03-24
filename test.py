@@ -35,18 +35,22 @@ robot_interface = FrankaInterface(
 )
 
 reset_joints_to(robot_interface, reset_joint_positions)
-
+quat, pos = robot_interface.last_eef_quat_and_pos
+print("initial pos, quat", pos, quat)
 skills = PrimitiveSkill(
     controller_type=controller_type,
     controller_config=get_default_controller_config(controller_type),
     robot_interface=robot_interface,
 )
 
-goal_pos = [0.5764149, -0.12984779, 0.56015941]
-goal_quat = [0.7913314, 0.5174134, 0.28115153, 0.16441339]
+goal_pos = [0.5764149, 0.1, 0.16015941]
+goal_quat = [0.9998497, 0.00907074, 0.01465143, 0.00190753]
 
 skills._move_to(
     params = np.concatenate([goal_pos, goal_quat, [-1]])
 )
 
-print("final eef pos and quat", robot_interface.last_eef_quat_and_pos)
+final_quat, final_pos = robot_interface.last_eef_quat_and_pos
+final_pos = final_pos.flatten()
+print("final eef pos and quat", final_pos, final_quat)
+print("position error", final_pos - goal_pos)

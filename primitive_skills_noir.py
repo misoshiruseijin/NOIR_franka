@@ -258,7 +258,7 @@ class PrimitiveSkill:
 
         return np.concatenate([action[:self.num_skills], params])
 
-    def interpolate_poses(self, target_pos, target_rot=None, num_steps=None, step_size=None):
+    def interpolate_poses(self, target_pos, target_rot=None, num_steps=None, step_size=None, step_size_deg=5):
         assert num_steps is None or step_size is None
         last_robot_state = self.robot_interface._state_buffer[-1]
         last_gripper_state = self.robot_interface._gripper_state_buffer[-1]
@@ -268,6 +268,9 @@ class PrimitiveSkill:
         start_pos = ee_pose[:3, 3]
         start_rot = ee_pose[:3, :3]
         target_rot = U.quat2mat(target_rot)
+    
+
+        rot_step_size = np.radians(step_size_deg) # degrees per step
 
         if num_steps is None:
             # calculate number of steps in terms of translation
@@ -278,13 +281,16 @@ class PrimitiveSkill:
                 num_steps_pos = 1
             # calculate number of steps in terms of rotation
             rot_angle = np.arccos((np.trace(np.dot(start_rot, np.transpose(target_rot))) - 1) / 2)
-            if rot_angle >= np.radians(2):
-                num_steps_rot = int(np.ceil(rot_angle / np.radians(2)))  # 2 degree for one step
+            if rot_angle >= np.radians(rot_step_size):
+                num_steps_rot = int(np.ceil(rot_angle / rot_step_size))  # 2 degree for one step
             else:
                 num_steps_rot = 1
-            # print(f'num_steps_pos: {num_steps_pos}')
-            # print(f'num_steps_rot: {num_steps_rot}')
+            
             num_steps = max(num_steps_rot, num_steps_pos)
+            print("rot angle", rot_angle)
+            print(f'num_steps_pos: {num_steps_pos}')
+            print(f'num_steps_rot: {num_steps_rot}')
+            print("num steps", num_steps)
 
         tran_inter = self.interpolate_tranlations(start_pos, target_pos, num_steps)
         ori_inter = self.interpolate_rotations(start_rot, target_rot, num_steps)
@@ -405,70 +411,55 @@ class PrimitiveSkill:
 
         action = params[:-1]
         action = np.clip(action, -1, 1)
+        goal_pos = action[:3]
+        goal_orn = action[3:7]
+        gripper_action = params[7]
 
-        tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], num_steps=20) # num_step should between [10, 30], the larger the slower
-        print("tran_inter", tran_inter)
-        print("ori_inter", ori_inter)
+        fine_tune_dist = 0.05 # start fine tuning after distance to goal is within this value
+
+        # tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], num_steps=20) # num_step should between [10, 30], the larger the slower
+        # tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.02, step_size_deg=5) # num_step should between [10, 30], the larger the slower
+        tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=0.015, step_size_deg=5) # num_step should between [10, 30], the larger the slower
 
         for i in range(len(tran_inter)):
             trans = tran_inter[i]
             ori = U.mat2quat(ori_inter[i])
 
-            for _ in range(3):
+            for _ in range(3): # how many times does one waypoint execute. 
+                               # The smaller the faster but less accurate. 
+                               # The larger the slower and more accurate but you will feel pausing between waypoints
                 new_action = self.poses_to_action(trans, ori)
-                new_action = np.concatenate((new_action, action[-1:]))
-                print("new action", new_action)
+                new_action = np.concatenate((new_action, [gripper_action]))
+                self.robot_interface.control(
+                    controller_type=self.controller_type,
+                    action=new_action,
+                    controller_cfg=self.controller_config,
+                )
+            
+            cur_quat, cur_pos = self.robot_interface.last_eef_quat_and_pos
+            cur_pos = cur_pos.flatten()
+            pos_error = goal_pos - cur_pos
+            if np.linalg.norm(pos_error) < fine_tune_dist:
+                break
+
+        # fine tune
+        print("fine tuning.....")
+        tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.005, step_size_deg=5) # num_step should between [10, 30], the larger the slower
+        for i in range(len(tran_inter)):
+            trans = tran_inter[i]
+            ori = U.mat2quat(ori_inter[i])
+
+            for _ in range(3): # how many times does one waypoint execute. 
+                               # The smaller the faster but less accurate. 
+                               # The larger the slower and more accurate but you will feel pausing between waypoints
+                new_action = self.poses_to_action(trans, ori)
+                new_action = np.concatenate((new_action, [gripper_action]))
                 self.robot_interface.control(
                     controller_type=self.controller_type,
                     action=new_action,
                     controller_cfg=self.controller_config,
                 )
 
-        # skill is done with success if pos and ori goals are reached
-        # if self.use_yaw:
-        #     goal_reached = pos_reached and yaw_reached
-        # else:
-        #     goal_reached = pos_reached
-
-        # if goal_reached:
-        #     action = np.zeros(7)
-        #     action[-1] = gripper_action
-        #     skill_done = True
-        #     skill_success = True
-        #     if count_steps:
-        #         self.steps = 0
-
-        # # skill is done with failure if number of steps exceed maximum allowed number of steps
-        # elif count_steps and self.steps > max_steps:
-        #     action = np.zeros(7)
-        #     action[-1] = gripper_action
-        #     skill_done = True
-        #     skill_success = False
-        #     if count_steps:
-        #         self.steps = 0
-        #         print(f"max steps {max_steps} for move_to reached")
-
-        # else: # skill is not done yet - compute action
-
-        #     # steady speed
-        #     action_pos = pos_error / max(np.abs(pos_error))
-        #     action_pos = np.zeros(3)
-        #     action_axis_angle = np.zeros(3)
-
-        #     if not pos_reached:
-        #         pos_error_norm = np.linalg.norm(pos_error)
-        #         action_scale = 1.0 # 0.6
-        #         if pos_error_norm < pos_near: # slow down when near target
-        #             action_scale = 0.8 # 0.45
-        #         action_pos = action_scale * pos_error / pos_error_norm
-
-        #     if not yaw_reached:
-        #         action_axis_angle = np.array([0, 0, yaw_error])
-        #         action_axis_angle = np.clip(action_axis_angle, -0.5, 0.5)
-
-        #     action = action_pos.tolist() + action_axis_angle.tolist() + [gripper_action]
-
-        # # print("action", action, "\n")
 
         # if count_steps:
         #     self.steps += 1

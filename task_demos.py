@@ -2,6 +2,8 @@
 import numpy as np
 import sys
 import time
+import argparse
+
 sys.path.append("..")
 sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
 from primitive_skills_noir import PrimitiveSkill
@@ -43,27 +45,32 @@ skills = PrimitiveSkill(
     robot_interface=robot_interface,
 )
 
-# pos = [0.43794176, -0.04834167, 0.3170166]
-pos = [0.44395209, -0.10580851, 0.20464783] # teapot on drawer
-# pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
+def whiteboard_demo():
+    eraser_pos = [0.46666203, 0.15260639, 0.008]
+    start_pos = [0.45430818, 0.12086698, 0.0]
+    dx = 0.1
+    dy = -0.25
+    yaw = 0.0
+    
+    # pick up eraser
+    skills._pick_from_top(eraser_pos)
 
-# skills._pick_from_side(params=pos)
-# skills._place_from_side(params=pos)
-skills._push_z(params=np.concatenate([pos, [-0.1, 45.0]]))
+    # erase 
+    params = np.concatenate([start_pos, [dx, dy, yaw]])
+    # skills._push_xy(params=params)
+    skills._wipe_xy(params=params)
 
-# skills._pick(params=np.concatenate([pos, left_quat]))
-# skills._rehome(gripper_action=1, gripper_quat=left_quat)
+def main(args):
 
-# skills._rehome(gripper_action=-1, gripper_direction="down")
+    if args.task == None:
+        print("Specify a task to demo")
 
-# goal_pos = [0.5764149, 0.1, 0.16015941]
-# goal_quat = [0.9998497, 0.00907074, 0.01465143, 0.00190753]
+    if args.task == "whiteboard":
+        whiteboard_demo()
 
-# skills._move_to(
-#     params = np.concatenate([goal_pos, goal_quat, [-1]])
-# )
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--task", type=str)
+    args = parser.parse_args()
 
-# final_quat, final_pos = robot_interface.last_eef_quat_and_pos
-# final_pos = final_pos.flatten()
-# print("final eef pos and quat", final_pos, final_quat)
-# print("position error", final_pos - goal_pos)
+    main(args)

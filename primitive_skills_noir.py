@@ -494,11 +494,13 @@ class PrimitiveSkill:
 
         # move to above pick position 
         params = np.concatenate([waypoint, self.from_top_quat, [-1]])
-        self._move_to(params=params, finetune=False)
+        self._move_to(params=params)
 
         # move down to pick position
         params = np.concatenate([goal_pos, self.from_top_quat, [-1]])
         self._move_to(params=params)
+        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
+        print("pick pos error", goal_pos - final_pos.flatten())
         
         # close gripper
         self._gripper_action(gripper_action=1)
@@ -598,6 +600,122 @@ class PrimitiveSkill:
         # rehome
         self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
 
+    def _push_z(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in z direction by some delta, then rehomes
+
+        Args: 
+            params (6-tuple of floats) : [start_pos, dz, yaw_angle[deg]]
+        """
+
+        start_pos = params[:3]
+        dz = params[3]
+        yaw = params[4]
+        gripper_action = 1 # gripper is closed
+
+        goal_pos = [start_pos[0], start_pos[1], start_pos[2] + dz]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+
+        # convert euler to quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        print("goal quat", goal_quat)
+        print("from top quat", self.from_top_quat)
+
+        # move to start pos
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move in z by dz
+        params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+
+        # move up to waypoint 
+        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+        
+        # rehome
+        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
+
+    def _push_xy(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in x and y direction by specified delta, then rehomes
+
+        Args: 
+            params (7-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
+        """
+        start_pos = params[:3]
+        dx = params[3]
+        dy = params[4]
+        yaw = params[5]
+        gripper_action = 1 # gripper is closed
+
+        goal_pos = [start_pos[0] + dx, start_pos[1] + dy, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+
+        # convert euler to quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        print("goal quat", goal_quat)
+        print("from top quat", self.from_top_quat)
+
+        # move to start pos
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move in xy by delta 
+        params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move up to waypoint 
+        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+        
+        # rehome
+        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
+
+    def _wipe_xy(self, params):
+        """
+        Wipes a surface by starting at specified position, moving on the xy plane with specified dx, dy, returns to start position, then rehomes
+        
+        Args:
+            params (7-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
+        """
+        start_pos = params[:3]
+        dx = params[3]
+        dy = params[4]
+        yaw = params[5]
+        gripper_action = 1 # gripper is closed
+
+        end_pos = [start_pos[0] + dx, start_pos[1] + dy, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+
+        # convert euler to quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        print("goal quat", goal_quat)
+        print("from top quat", self.from_top_quat)
+
+        # move to start pos
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move in xy by delta 
+        params = np.concatenate([end_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move back to start position
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move up to waypoint
+        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+
+        
 
     def _gripper_action(self, gripper_action):
         """
@@ -616,7 +734,6 @@ class PrimitiveSkill:
                 controller_cfg=self.controller_config,
             )
         
-
     def _rehome(self, gripper_action, gripper_quat, finetune=True):
         """
         Returns to home position with gripper pointing down. Finetuning step is turned off as default

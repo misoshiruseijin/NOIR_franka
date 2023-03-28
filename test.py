@@ -43,14 +43,27 @@ skills = PrimitiveSkill(
     robot_interface=robot_interface,
 )
 
-goal_pos = [0.5764149, 0.1, 0.16015941]
-goal_quat = [0.9998497, 0.00907074, 0.01465143, 0.00190753]
+# pos = [0.43794176, -0.04834167, 0.3170166]
+# pos = [0.44395209, -0.10580851, 0.20464783] # teapot on drawer
+pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
 
-skills._move_to(
-    params = np.concatenate([goal_pos, goal_quat, [-1]])
-)
+# skills._pick_from_side(params=pos)
+skills._pick_from_side(params=pos)
+skills._place_from_side(params=pos)
 
-final_quat, final_pos = robot_interface.last_eef_quat_and_pos
-final_pos = final_pos.flatten()
-print("final eef pos and quat", final_pos, final_quat)
-print("position error", final_pos - goal_pos)
+# skills._pick(params=np.concatenate([pos, left_quat]))
+# skills._rehome(gripper_action=1, gripper_quat=left_quat)
+
+# skills._rehome(gripper_action=-1, gripper_direction="down")
+
+# goal_pos = [0.5764149, 0.1, 0.16015941]
+# goal_quat = [0.9998497, 0.00907074, 0.01465143, 0.00190753]
+
+# skills._move_to(
+#     params = np.concatenate([goal_pos, goal_quat, [-1]])
+# )
+
+# final_quat, final_pos = robot_interface.last_eef_quat_and_pos
+# final_pos = final_pos.flatten()
+# print("final eef pos and quat", final_pos, final_quat)
+# print("position error", final_pos - goal_pos)

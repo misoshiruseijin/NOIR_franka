@@ -14,9 +14,10 @@ from deoxys.utils import YamlConfig, transform_utils
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.utils.input_utils import input2action
 from deoxys.utils.log_utils import get_deoxys_example_logger
-import deoxys.utils.transform_utils as U
+import utils.transformation_utils as U
 
 import pdb
+import time
 
 logger = get_deoxys_example_logger()
 
@@ -374,12 +375,11 @@ class PrimitiveSkill:
         # use the OSC controller's convention for delta rotation
         delta_rot_mat = target_rot.dot(start_rot.T)
         delta_quat = U.mat2quat(delta_rot_mat)
-        # delta_rotation = U.quat2euler(delta_quat)
-        delta_rotation = U.mat2euler(U.quat2mat(delta_quat))
+        delta_rotation = U.quat2euler(delta_quat)
         delta_rotation = np.clip(delta_rotation / max_drot, -1., 1.)
         return np.concatenate([delta_position, delta_rotation])
 
-    def _move_to(self, params, step_size=0.015, finetune=True):
+    def _move_to(self, params, step_size=0.015, deg_step_size=5, finetune=True):
         """
         Moves end effector to goal position and orientation
 
@@ -400,7 +400,7 @@ class PrimitiveSkill:
 
         fine_tune_dist = 0.05 # start fine tuning after distance to goal is within this value
 
-        tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=step_size, step_size_deg=5) # num_step should between [10, 30], the larger the slower
+        tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=step_size, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
 
         for i in range(len(tran_inter)):
             trans = tran_inter[i]
@@ -425,7 +425,7 @@ class PrimitiveSkill:
 
         # fine tune
         if finetune:
-            tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.005, step_size_deg=5) # num_step should between [10, 30], the larger the slower
+            tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.005, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
             for i in range(len(tran_inter)):
                 trans = tran_inter[i]
                 ori = U.mat2quat(ori_inter[i])
@@ -631,6 +631,9 @@ class PrimitiveSkill:
         params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
         self._move_to(params=params, finetune=False)
 
+        # pause 
+        self._pause(gripper_action=1.0, sec=1)
+
         # move up to waypoint 
         params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
         self._move_to(params=params, finetune=False)
@@ -715,8 +718,6 @@ class PrimitiveSkill:
         params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
         self._move_to(params=params, finetune=False)
 
-        
-
     def _gripper_action(self, gripper_action):
         """
         Closes or opens gripper
@@ -734,7 +735,7 @@ class PrimitiveSkill:
                 controller_cfg=self.controller_config,
             )
         
-    def _rehome(self, gripper_action, gripper_quat, finetune=True):
+    def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None):
         """
         Returns to home position with gripper pointing down. Finetuning step is turned off as default
 
@@ -742,8 +743,28 @@ class PrimitiveSkill:
             gripper_action (int) : -1 for open, 1 for closed
             gripper_direction (str) : "down" for pointing down, "front" for pointing forward
         """
-
+        
         params = np.concatenate([self.reset_eef_pos, gripper_quat, [gripper_action]])
-        self._move_to(params=params, step_size=0.015, finetune=finetune)
+        
+        if deg_step_size is not None:
+            self._move_to(params=params, step_size=0.015, finetune=finetune, deg_step_size=deg_step_size)
+        else:
+            self._move_to(params=params, step_size=0.015, finetune=finetune)
+            
         final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
         print("rehome pos error", self.reset_eef_pos - final_pos.flatten())
+
+    def _pause(self, gripper_action, sec):
+        """
+        pause in place for specified number of seconds
+        """
+        action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, gripper_action]
+
+        start_time = time.time()
+
+        while time.time() < start_time + sec:
+            self.robot_interface.control(
+                controller_type=self.controller_type,
+                action=action,
+                controller_cfg=self.controller_config,
+            )

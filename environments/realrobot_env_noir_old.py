@@ -8,7 +8,7 @@ from abc import abstractmethod
 
 import sys
 sys.path.append("..")
-from primitive_skills_noir import PrimitiveSkill
+from primitive_skills import PrimitiveSkill
 
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.franka_interface import FrankaInterface
@@ -38,7 +38,9 @@ class RealRobotEnv(gym.Env):
         workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
         skill_config={
             "waypoint_height" : 0.25,
+            "yaw_limits" : (-0.5*np.pi, 0.5*np.pi),
             "idx2skill" : None,
+            "aff_pos_thresh" : None,
         },
         # visualize_params=True, # whether to use cameras to visualize position of 
         ignore_done=False,
@@ -72,6 +74,8 @@ class RealRobotEnv(gym.Env):
         )
 
         # setup camera interfaces
+        # self.visualize_params = visualize_params
+        # if visualize_params:
         self.camera_interfaces = {
             0 : CameraRedisSubInterface(camera_id=0),
             1 : CameraRedisSubInterface(camera_id=1),
@@ -89,7 +93,10 @@ class RealRobotEnv(gym.Env):
             robot_interface=self.robot_interface,
             waypoint_height=skill_config["waypoint_height"],
             workspace_limits=self.workspace_limits,
+            yaw_limits=skill_config["yaw_limits"],
             idx2skill=skill_config["idx2skill"],
+            aff_pos_thresh=skill_config["aff_pos_thresh"],
+            use_yaw=use_yaw,
             reset_joint_pos=reset_joint_pos,
         )
 
@@ -123,6 +130,11 @@ class RealRobotEnv(gym.Env):
         low = -high
         self.observation_space = spaces.Box(low=low, high=high)
 
+        # # Keyboard event threading
+        # self.key_listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+        # self.key_listener.start()
+
+
     def reward(self,):
         """
         Reard function for task. Returns environment reward only.
@@ -136,7 +148,7 @@ class RealRobotEnv(gym.Env):
         
         raise NotImplementedError
 
-    def step(self, action, execute=True): # TODO this should be changed to use skills only - we don't need low level control
+    def step(self, action, execute=True):
 
         """
         Commands robot to take input low level action and return  
@@ -156,15 +168,15 @@ class RealRobotEnv(gym.Env):
         )
         self.timestep += 1
 
-        # self.current_observations = self._get_current_robot_state()
         reward, done, info = self._post_action(action)        
-        # print("gripper q", self.robot_interface.last_gripper_q)
         self._add_robot_state_to_cur_obs()
+
+        # TODO return observation as dict and flatten it in a wrapper
         obs_to_use = {key : self.current_observations[key] for key in self.keys}
         flattened_obs = self._flatten_obs(obs_to_use)
         return flattened_obs, reward, done, info
 
-    def _post_action(self, action): # TODO max steps check not needed? reset only when task is complete or if human wants it to??
+    def _post_action(self, action):
             """
             Do any housekeeping after taking an action.
             Args:
@@ -190,7 +202,7 @@ class RealRobotEnv(gym.Env):
         self.timestep = 0
         self.done = False
         
-    def reset(self): # TODO - flattening should happen in wrapper. just return obs as dict
+    def reset(self):
         """
         Reset robot to home joint configuration and returns observation
         """
@@ -221,15 +233,15 @@ class RealRobotEnv(gym.Env):
         current_euler = transform_utils.mat2euler(current_rot)
         current_yaw = current_euler[-1]
 
-        robot_state = { # TODO - include all of these by default. handle the postprocessing in wrapper
+        robot_state = {
             "eef_pos" : current_pos,
-            "eef_quat" : current_quat,
-            "eef_yaw" : current_yaw,
+            # "eef_quat" : current_quat,
+            # "eef_yaw" : current_yaw,
             "gripper_state" : gripper_state,
         }
         return robot_state
 
-    def _check_action_in_ws_bounds(self, action): # TODO shouldn't need this if not using low level control
+    def _check_action_in_ws_bounds(self, action):
         """
         Checks if action will keep robot within workspace boundaries
         """
@@ -242,7 +254,7 @@ class RealRobotEnv(gym.Env):
         cur_y_in_bounds = self.workspace_limits["y"][0] < eef_pos[1] < self.workspace_limits["y"][1]
         cur_z_in_bounds = self.workspace_limits["z"][0] < eef_pos[2] < self.workspace_limits["z"][1]
 
-        # if already outside workspace, allow action if it brings it inside workspace
+        # if already outside workspace, allow action if it brings eef towards inside of workspace
         if not cur_x_in_bounds:
             print("EEF already out of bounds in x")
             x_good = (
@@ -272,8 +284,9 @@ class RealRobotEnv(gym.Env):
         
         print("action is ok in x y z", x_good, y_good, z_good)
         return x_good and y_good and z_good
+        
 
-    def _update_param_visualization(self, action): # TODO - check the case where multiple positoins are given and fix colors
+    def _update_param_visualization(self, action):
         """
         Given coordinates in 3d world, updates visualization of 3d points in camera image.
         First point is displayed in red and the second point is displayed in blue.
@@ -360,8 +373,7 @@ class RealRobotEnv(gym.Env):
             cv2.imwrite(f'param_vis_images/camera{camera_id}_with_params.png', im[:, :, ::-1])
             cv2.imwrite(f'param_vis_images/camera{camera_id}_raw.png', im_raw[:, :, ::-1])
 
-    def human_feedback_request(self, action): # TODO don't need this?
-
+    def human_feedback_request(self, action):
         """
         Algorithm calls this function to ask for human feedback. A visualization of parameters is updated
         Args:
@@ -369,8 +381,7 @@ class RealRobotEnv(gym.Env):
             yaw : yaw angle
         """
         self._update_param_visualization(action)
-
-    # TODO - need new function that: presents objects -> human choose obj -> present relevant skills -> human chooses skill -> human chooses param -> execute
+        self._update_param_visualization(action)
 
     def _add_robot_state_to_cur_obs(self):
         robot_state = self._get_current_robot_state()
@@ -390,7 +401,8 @@ class RealRobotEnv(gym.Env):
         """
         return self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], hsv_low, hsv_high, obj_name=obj_name, wait=wait, dilation=dilation)
 
-    def _flatten_obs(self, obs_dict, verbose=False): # TODO - this should go in wrapper
+    # TODO - this should go in wrapper
+    def _flatten_obs(self, obs_dict, verbose=False):
         """
         Filters keys of interest out and concatenate the information.
 
@@ -410,7 +422,7 @@ class RealRobotEnv(gym.Env):
                 ob_lst.append(np.array(obs_dict[key]).flatten())
         return np.concatenate(ob_lst)
 
-    def seed(self, seed=None): # TODO - this should go in wrapper
+    def seed(self, seed=None):
         """
         Utility function to set numpy seed
 

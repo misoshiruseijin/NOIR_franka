@@ -60,15 +60,62 @@ def whiteboard_demo():
     # skills._push_xy(params=params)
     skills._wipe_xy(params=params)
 
+def table_setting_demo():
+    bowl_l_pick_pos = [0.35273809, -0.09305739, 0.03344466]
+    bowl_s_pick_pos = [0.34883716, -0.09842549, 0.01824088]
+    spoon_pick_pos = [0.38930392, -0.10407848, 0.0]
+    cup_pick_pos = [0.55421162, -0.20033619, 0.05052035]
+    bowl_l_place_pos = [0.49800597, 0.08944026, 0.05197067]
+    bowl_s_place_pos = [0.37402136, 0.19934355, 0.02147385]
+    spoon_place_pos = [0.43709598, 0.05446209, 0.10071782]
+    cup_place_pos = [0.3500154, -0.10689394, 0.03797645]
+
+    # pick place bowl L
+    skills._pick_from_top(params=bowl_l_pick_pos)
+    skills._place_from_top(params=bowl_l_place_pos)
+
+    # pick_place bowl S
+    skills._pick_from_top(params=bowl_s_pick_pos)
+    skills._place_from_top(params=bowl_s_place_pos)
+
+    # pick place spoon
+    skills._pick_from_top(params=spoon_pick_pos)
+    skills._place_from_top(params=spoon_place_pos)
+
+    # pick place cup
+    skills._pick_from_top(params=cup_pick_pos)
+    skills._place_from_top(params=cup_place_pos)
+
+def tofu():
+    knife_pos = [0.53986897, -0.16281398, 0.11506687]
+    cut_pos = [0.47002734, 0.04665355, 0.25096985]
+    cut_depth = 0.2
+
+    # pick knife
+    skills._pick_from_top(params=knife_pos)
+
+    # cut 0 deg
+    skills._push_z(params=np.concatenate([cut_pos, [-cut_depth, 0.0]]))
+
+    # cut 90 deg
+    skills._push_z(params=np.concatenate([cut_pos, [-cut_depth, 90.0]]))
+
 def main(args):
 
     if args.task == None:
         print("Specify a task to demo")
 
-    if args.task == "whiteboard":
-        whiteboard_demo()
+    task = tasks[args.task]
+    task()
+    
 
 if __name__ == "__main__":
+
+    tasks = {
+        "whiteboard" : whiteboard_demo,
+        "tablesetting" : table_setting_demo,
+        "tofu" : tofu,
+    }
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str)
     args = parser.parse_args()

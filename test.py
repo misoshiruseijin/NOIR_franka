@@ -5,6 +5,7 @@ import time
 sys.path.append("..")
 sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
 from primitive_skills_noir import PrimitiveSkill
+from environments.tablesetting_env import TablesettingEnv
 
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.franka_interface import FrankaInterface
@@ -28,31 +29,39 @@ reset_joint_positions = [
     0.8480939705504309,
 ]
 
-controller_type = "OSC_POSE"
-robot_interface = FrankaInterface(
-        general_cfg_file="config/charmander.yml",
-        control_freq=20,
-)
 
-reset_joints_to(robot_interface, reset_joint_positions)
-quat, pos = robot_interface.last_eef_quat_and_pos
-print("initial pos, quat", pos, quat)
-skills = PrimitiveSkill(
-    controller_type=controller_type,
-    controller_config=get_default_controller_config(controller_type),
-    robot_interface=robot_interface,
-)
+env = TablesettingEnv()
+pos = env._update_obj_positions()
 
-# pos = [0.43794176, -0.04834167, 0.3170166]
-pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer
-# pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
 
-skills._move_to(params=np.concatenate([pos, quat, [-1]]))
-final_quat, final_pos = robot_interface.last_eef_quat_and_pos
-error = pos - final_pos.flatten()
-print("goal pos", pos)
-print("final pos", final_pos)
-print("error", error)
+
+
+# controller_type = "OSC_POSE"
+# robot_interface = FrankaInterface(
+#         general_cfg_file="config/charmander.yml",
+#         control_freq=20,
+# )
+
+# reset_joints_to(robot_interface, reset_joint_positions)
+# quat, pos = robot_interface.last_eef_quat_and_pos
+
+# print("initial pos, quat", pos, quat)
+# skills = PrimitiveSkill(
+#     controller_type=controller_type,
+#     controller_config=get_default_controller_config(controller_type),
+#     robot_interface=robot_interface,
+# )
+
+# # pos = [0.43794176, -0.04834167, 0.3170166]
+# pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer
+# # pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
+
+# skills._move_to(params=np.concatenate([pos, quat, [-1]]))
+# final_quat, final_pos = robot_interface.last_eef_quat_and_pos
+# error = pos - final_pos.flatten()
+# print("goal pos", pos)
+# print("final pos", final_pos)
+# print("error", error)
 
 # skills._pick_from_side(params=pos)
 # skills._place_from_side(params=pos)

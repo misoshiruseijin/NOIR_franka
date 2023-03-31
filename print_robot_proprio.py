@@ -37,5 +37,4 @@ def main():
         # print("joint q", robot_joints)
         print("eef_quat", eef_quat)
 
-
 main()

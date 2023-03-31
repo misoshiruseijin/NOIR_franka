@@ -13,6 +13,7 @@ from deoxys.franka_interface import FrankaInterface
 from deoxys.utils import YamlConfig, transform_utils
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.utils.input_utils import input2action
+
 from deoxys.utils.log_utils import get_deoxys_example_logger
 import utils.transformation_utils as U
 
@@ -62,12 +63,16 @@ class PrimitiveSkill:
         self.controller_type = controller_type
         self.controller_config = controller_config
 
-        # robot home position, waypoint height and workspace / yaw limits
+        # robot home position, waypoint height, etc.
         self.reset_eef_pos = [0.45775618, 0.03207872, 0.35534091]
         self.from_top_quat = [0.9998506, 0.00906314, 0.01459545, 0.00192735] # quat when eef is pointing straight down 
         # self.from_side_quat = [-0.70351493, -0.01353285, -0.71054333, 0.00344373] # quat when eef is pointing straight forward
-        self.from_side_quat = [0.508257, 0.49478495, -0.49082687, 0.5059166] # quat when eef is pointing to right of robot
-        
+        self.from_side_quat = [0.508257, 0.49478495, -0.49082687, 0.5059166] # quat when eef is pointing to right of robot 
+        if reset_joint_pos is None:
+            self.reset_joint_positions = [0.09162008114028396, -0.19826458111314524, -0.01990020486871322, -2.4732269941140346, -0.01307073642274261, 2.30396583422025, 0.8480939705504309]
+        else:
+            self.reset_joint_positions = reset_joint_pos
+                
         self.waypoint_height = waypoint_height # height of waypoint in pick, place, push skills
         if workspace_limits is not None:
             self.workspace_limits = workspace_limits
@@ -78,133 +83,435 @@ class PrimitiveSkill:
                 "z" : (0.03, 0.30)
             }
 
-        # # skill settings 
-        # self.skills = {
-        #     "move_to" : {
-        #         "max_steps" : 200,
-        #         "num_params" : 8,
-        #         "skill" : self._move_to,
-        #         "default_idx" : 0,
-        #     },
+        # skill settings 
+        self.skills = {
+            "move_to" : {
+                "num_params" : 8,
+                "skill" : self._move_to,
+                "default_idx" : 0,
+            },
+            "pick_from_top" : {
+                "num_params" : 3,
+                "skill" : self._pick_from_top,
+                "default_idx" : 1,
+            },
+            "pick_from_side" : {
+                "num_params" : 3,
+                "skill" : self._pick_from_side,
+                "default_idx" : 2,
+            },
+            "place_from_top" : {
+                "num_params" : 3,
+                "skill" : self._place_from_top,
+                "default_idx" : 3,
+            },
+            "place_from_side" : {
+                "num_params" : 3,
+                "skill" : self._place_from_side,
+                "default_idx" : 4,
+            },
+            "push_xy" : {
+                "num_params" : 6,
+                "skill" : self._push_xy,
+                "default_idx" : 5,
+            },
+            "push_z" : {
+                "num_params" : 5,
+                "skill" : self._push_z,
+                "default_idx" : 6,
+            },
+            "wipe_xy" : {
+                "num_params" : 6,
+                "skill" : self._wipe_xy,
+                "default_idx" : 7,
+            },
+            "gripper_action" : {
+                "num_params" : 1,
+                "skill" : self._gripper_action,
+                "default_idx" : 8,
+            },
+        }
 
-        #     # TODO update these
-        #     "gripper_release" : {
-        #         "max_steps" : 25,
-        #         "num_params" : 0,
-        #         "skill" : self._gripper_release,
-        #         "default_idx" : 1,
-        #         "default_aff_thresh" : None,
-        #     },
-
-        #     "gripper_close" : {
-        #         "max_steps" : 25,
-        #         "num_params" : 0,
-        #         "skill" : self._gripper_close,
-        #         "default_idx" : 2,
-        #         "default_aff_thresh" : None,
-        #     },
-
-        #     "pick" : {
-        #         "max_steps" : 300,
-        #         "num_params" : 4,
-        #         "skill" : self._pick,
-        #         "default_idx" : 3,
-        #         "default_aff_thresh" : 0.03,
-        #     },
-
-        #     "place" : {
-        #         "max_steps" : 300,
-        #         "num_params" : 4,
-        #         "skill" : self._place,
-        #         "default_idx" : 4,
-        #         "default_aff_thresh" : 0.03,
-        #     },
-
-        #     "push" : {
-        #         "max_steps" : 150,
-        #         "num_params" : 8,
-        #         "skill" : self._push,
-        #         "default_idx" : 5,
-        #         "default_aff_thresh" : 0.1,
-        #     },
-
-        #     "push_x" : {
-        #         "max_steps" : 100,
-        #         "num_params" : 5,
-        #         "skill" : self._push_x,
-        #         "default_idx" : 6,
-        #         "default_aff_thresh" : 0.1,
-        #     },
-
-        #     "push_y" : {
-        #         "max_steps" : 100,
-        #         "num_params" : 5,
-        #         "skill" : self._push_y,
-        #         "default_idx" : 7,
-        #         "default_aff_thresh" : 0.1,
-        #     },
-        # }
-
-        # if idx2skill is None:
-        #     self.idx2skill = { skill["default_idx"] : name for name, skill in self.skills.items()}
-        # else:
-        #     for name in idx2skill.values():
-        #         assert name in self.skills.keys(), f"Error with skill {name}. Skill name must be one of {self.skills.keys()}"
-        #     self.idx2skill = idx2skill    
+        if idx2skill is None:
+            self.idx2skill = { skill["default_idx"] : name for name, skill in self.skills.items()}
+        else:
+            for name in idx2skill.values():
+                assert name in self.skills.keys(), f"Error with skill {name}. Skill name must be one of {self.skills.keys()}"
+            self.idx2skill = idx2skill    
     
-        # self.num_skills = len(self.idx2skill)
-        # self.max_num_params = max([self.skills[skill_name]["num_params"] for skill_name in self.idx2skill.values()])
-
-        self.steps = 0 # number of steps spent so far on this skill
-        self.grip_steps = 0 # number of consequtive steps spent on gripper close/releaes
-        self.phase = 0 # keeps track of which phase the skill is in for multiple-step skills (pick, place, push)
-        self.prev_success = False # whether previous phase succeeded 
-        self.waypoint_queue = [] # list of waypoints for this phase
-
-    def get_action(self, action):
-        """
-        Args:
-            action (array): one-hot vector for skill selection concatenated with skill parameters
-                one-hot vector dimension must be same as self.n_skills. skill parameter can have variable dimension
-        Returns:
-            action (7d-array): action commands for simulation environment - (position commands, orientation commands, gripper command)    
-            skill_done (bool): True if goal skill completed successfully or if max allowed steps is reached
-            skill_success (bool) : True if skill completed successfully
-        """
-        skill_idx = np.argmax(action[:self.num_skills])
-        skill = self.skills[self.idx2skill[skill_idx]]["skill"]
-        params = action[self.num_skills:]
-        # print("Skill called", self.idx2skill[skill_idx])
-        action, skill_done, skill_success = skill(params, return_n_steps=False)
-
-        return action, skill_done, skill_success
+        self.num_skills = len(self.idx2skill)
+        self.max_num_params = max([self.skills[skill_name]["num_params"] for skill_name in self.idx2skill.values()])
 
     def execute_skill(self, action):
-
+        """
+        Executes skill
+        Args:
+            action : skill selection vector concatenated with params vector
+        """
+        # get the skill to execute
         skill_idx = np.argmax(action[:self.num_skills])
-        skill = self.skills[self.idx2skill[skill_idx]]["skill"]
-        params = action[self.num_skills:]
-        skill_done = False
+        skill = self.skills[self.idx2skill[skill_idx]]["skill"] 
         
-        while not skill_done:
-            # print("step", self.steps)
-            action_ll, skill_done, skill_success, n_steps = skill(
-                params=params,
-                return_n_steps=True,
-            )
+        # extract params and execute
+        params = action[self.num_skills:]
+        skill(params)
 
-            if skill_done:
-                break 
+    def _move_to(self, params, step_size=0.015, deg_step_size=5, finetune=True):
+        """
+        Moves end effector to goal position and orientation
 
-            # print("action ll", action_ll)
+        Args: 
+            params (8-tuple of floats) : [goal_pos, goal_quat, gripper_state]
+        """
+
+        while self.robot_interface.state_buffer_size == 0:
+            logger.warn("Robot state not received")
+            time.sleep(0.5)
+
+        # extract  params
+        action = params[:-1]
+        action = np.clip(action, -1, 1)
+        goal_pos = action[:3]
+        goal_orn = action[3:7]
+        gripper_action = params[7]
+
+        fine_tune_dist = 0.05 # start fine tuning after distance to goal is within this value
+
+        tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=step_size, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
+
+        for i in range(len(tran_inter)):
+            # TODO - check if human wants to interrupt. if yes, stop execution and rehome. Make sure the other skills stop executing as well
+            trans = tran_inter[i]
+            ori = U.mat2quat(ori_inter[i])
+
+            for _ in range(3): # how many times does one waypoint execute. 
+                               # The smaller the faster but less accurate. 
+                               # The larger the slower and more accurate but you will feel pausing between waypoints
+                new_action = self.poses_to_action(trans, ori)
+                new_action = np.concatenate((new_action, [gripper_action]))
+                self.robot_interface.control(
+                    controller_type=self.controller_type,
+                    action=new_action,
+                    controller_cfg=self.controller_config,
+                )
+            
+            cur_quat, cur_pos = self.robot_interface.last_eef_quat_and_pos
+            cur_pos = cur_pos.flatten()
+            pos_error = goal_pos - cur_pos
+            if np.linalg.norm(pos_error) < fine_tune_dist:
+                break
+
+        # fine tune
+        if finetune:
+            tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.005, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
+            for i in range(len(tran_inter)):
+                trans = tran_inter[i]
+                ori = U.mat2quat(ori_inter[i])
+
+                for _ in range(3): # how many times does one waypoint execute. 
+                                # The smaller the faster but less accurate. 
+                                # The larger the slower and more accurate but you will feel pausing between waypoints
+                    new_action = self.poses_to_action(trans, ori)
+                    new_action = np.concatenate((new_action, [gripper_action]))
+                    self.robot_interface.control(
+                        controller_type=self.controller_type,
+                        action=new_action,
+                        controller_cfg=self.controller_config,
+                    )
+
+    def _pick_from_top(self, params):
+        """
+        Picks up object at specified position from top and rehomes
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+        # move to above pick position 
+        params = np.concatenate([waypoint, self.from_top_quat, [-1]])
+        self._move_to(params=params)
+
+        # move down to pick position
+        params = np.concatenate([goal_pos, self.from_top_quat, [-1]])
+        self._move_to(params=params)
+        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
+        print("pick pos error", goal_pos - final_pos.flatten())
+        
+        # close gripper
+        self._gripper_action(params=[1])
+
+        # move back up to waypoint
+        params = np.concatenate([waypoint, self.from_top_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # rehome
+        self._rehome(gripper_action=1, gripper_quat=self.from_top_quat)
+
+    def _pick_from_side(self, params):
+        """
+        Picks up object at specified position from side and rehomes
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint_side = np.array([params[0], params[1] + 0.2, params[2]])
+        waypoint_above = np.array([params[0], params[1], self.waypoint_height])
+
+        # move to beside pick position
+        params = np.concatenate([waypoint_side, self.from_side_quat, [-1]])
+        self._move_to(params=params, finetune=False)
+
+        # move to pick position
+        params = np.concatenate([goal_pos, self.from_side_quat, [-1]])
+        self._move_to(params=params)
+        
+        # close gripper
+        self._gripper_action(params=[1])
+
+        # move up to waypoint
+        params = np.concatenate([waypoint_above, self.from_side_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # rehome
+        self._rehome(gripper_action=1, gripper_quat=self.from_side_quat)
+
+    def _place_from_top(self, params):
+        """
+        Places object at specified location with gripper pointing down
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+        # move to above goal position 
+        params = np.concatenate([waypoint, self.from_top_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move down to goal position
+        params = np.concatenate([goal_pos, self.from_top_quat, [1]])
+        self._move_to(params=params)
+        
+        # release gripper
+        self._gripper_action(params=[-1])
+
+        # move back up to waypoint
+        params = np.concatenate([waypoint, self.from_top_quat, [-1]])
+        self._move_to(params=params, finetune=False)
+
+        # rehome
+        self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
+
+    def _place_from_side(self, params):
+        """
+        Places object at specified location with gripper pointing down
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+        # move to above goal position 
+        params = np.concatenate([waypoint, self.from_side_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move down to goal position
+        params = np.concatenate([goal_pos, self.from_side_quat, [1]])
+        self._move_to(params=params)
+        
+        # release gripper
+        self._gripper_action(params=[-1])
+
+        # move back up to waypoint
+        params = np.concatenate([waypoint, self.from_side_quat, [-1]])
+        self._move_to(params=params, finetune=False)
+
+        # rehome
+        self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
+
+    def _push_z(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in z direction by some delta, then rehomes
+
+        Args: 
+            params (5-tuple of floats) : [start_pos, dz, yaw_angle[deg]]
+        """
+
+        start_pos = params[:3]
+        dz = params[3]
+        yaw = params[4]
+        gripper_action = 1 # gripper is closed
+
+        goal_pos = [start_pos[0], start_pos[1], start_pos[2] + dz]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+
+        # convert euler to quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        print("goal quat", goal_quat)
+        print("from top quat", self.from_top_quat)
+
+        # move to start pos
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move in z by dz
+        params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+
+        # pause 
+        self._pause(gripper_action=1.0, sec=1)
+
+        # move up to waypoint 
+        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+        
+        # rehome
+        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
+
+    def _push_xy(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in x and y direction by specified delta, then rehomes
+
+        Args: 
+            params (6-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
+        """
+        start_pos = params[:3]
+        dx = params[3]
+        dy = params[4]
+        yaw = params[5]
+        gripper_action = 1 # gripper is closed
+
+        goal_pos = [start_pos[0] + dx, start_pos[1] + dy, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+
+        # convert euler to quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        print("goal quat", goal_quat)
+        print("from top quat", self.from_top_quat)
+
+        # move to start pos
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move in xy by delta 
+        params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move up to waypoint 
+        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+        
+        # rehome
+        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
+
+    def _wipe_xy(self, params):
+        """
+        Wipes a surface by starting at specified position, moving on the xy plane with specified dx, dy, returns to start position, then rehomes
+        
+        Args:
+            params (7-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
+        """
+        start_pos = params[:3]
+        dx = params[3]
+        dy = params[4]
+        yaw = params[5]
+        gripper_action = 1 # gripper is closed
+
+        end_pos = [start_pos[0] + dx, start_pos[1] + dy, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+
+        # convert euler to quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        print("goal quat", goal_quat)
+        print("from top quat", self.from_top_quat)
+
+        # move to start pos
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move in xy by delta 
+        params = np.concatenate([end_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move back to start position
+        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
+        self._move_to(params=params)
+
+        # move up to waypoint
+        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
+        self._move_to(params=params, finetune=False)
+
+    def _gripper_action(self, params):
+        """
+        Closes or opens gripper
+        
+        Args:
+            params : -1 to open, 1 to close
+        """
+        action = np.zeros(7)
+        action[-1] = params[0]
+
+        for _ in range(30):
             self.robot_interface.control(
                 controller_type=self.controller_type,
-                action=action_ll,
+                action=action,
                 controller_cfg=self.controller_config,
             )
+        
+    def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None):
+        """
+        Returns to home position with gripper pointing down. Finetuning step is turned off as default
 
-        self.steps = 0
-        return skill_success, n_steps - 1
+        Args:
+            gripper_action (int) : -1 for open, 1 for closed
+            gripper_direction (str) : "down" for pointing down, "front" for pointing forward
+        """
+        
+        params = np.concatenate([self.reset_eef_pos, gripper_quat, [gripper_action]])
+        
+        if deg_step_size is not None:
+            self._move_to(params=params, step_size=0.015, finetune=finetune, deg_step_size=deg_step_size)
+        else:
+            self._move_to(params=params, step_size=0.015, finetune=finetune)
+            
+        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
+        print("rehome pos error", self.reset_eef_pos - final_pos.flatten())
+
+    def _reset(self):
+        """
+        Resets joints to home position
+        """
+        reset_joints_to(self.robot_interface, self.reset_joint_positions)
+
+    def _pause(self, gripper_action, sec):
+        """
+        pause in place for specified number of seconds
+        """
+        action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, gripper_action]
+
+        start_time = time.time()
+
+        while time.time() < start_time + sec:
+            self.robot_interface.control(
+                controller_type=self.controller_type,
+                action=action,
+                controller_cfg=self.controller_config,
+            )
 
     def unnormalize_params(self, action): # TODO add case for push 1d's
         """
@@ -378,393 +685,3 @@ class PrimitiveSkill:
         delta_rotation = U.quat2euler(delta_quat)
         delta_rotation = np.clip(delta_rotation / max_drot, -1., 1.)
         return np.concatenate([delta_position, delta_rotation])
-
-    def _move_to(self, params, step_size=0.015, deg_step_size=5, finetune=True):
-        """
-        Moves end effector to goal position and orientation
-
-        Args: 
-            params (8-tuple of floats) : [goal_pos, goal_quat, gripper_state]
-        """
-
-        while self.robot_interface.state_buffer_size == 0:
-            logger.warn("Robot state not received")
-            time.sleep(0.5)
-
-        # extract  params
-        action = params[:-1]
-        action = np.clip(action, -1, 1)
-        goal_pos = action[:3]
-        goal_orn = action[3:7]
-        gripper_action = params[7]
-
-        fine_tune_dist = 0.05 # start fine tuning after distance to goal is within this value
-
-        tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=step_size, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
-
-        for i in range(len(tran_inter)):
-            trans = tran_inter[i]
-            ori = U.mat2quat(ori_inter[i])
-
-            for _ in range(3): # how many times does one waypoint execute. 
-                               # The smaller the faster but less accurate. 
-                               # The larger the slower and more accurate but you will feel pausing between waypoints
-                new_action = self.poses_to_action(trans, ori)
-                new_action = np.concatenate((new_action, [gripper_action]))
-                self.robot_interface.control(
-                    controller_type=self.controller_type,
-                    action=new_action,
-                    controller_cfg=self.controller_config,
-                )
-            
-            cur_quat, cur_pos = self.robot_interface.last_eef_quat_and_pos
-            cur_pos = cur_pos.flatten()
-            pos_error = goal_pos - cur_pos
-            if np.linalg.norm(pos_error) < fine_tune_dist:
-                break
-
-        # fine tune
-        if finetune:
-            tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.005, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
-            for i in range(len(tran_inter)):
-                trans = tran_inter[i]
-                ori = U.mat2quat(ori_inter[i])
-
-                for _ in range(3): # how many times does one waypoint execute. 
-                                # The smaller the faster but less accurate. 
-                                # The larger the slower and more accurate but you will feel pausing between waypoints
-                    new_action = self.poses_to_action(trans, ori)
-                    new_action = np.concatenate((new_action, [gripper_action]))
-                    self.robot_interface.control(
-                        controller_type=self.controller_type,
-                        action=new_action,
-                        controller_cfg=self.controller_config,
-                    )
-
-    def _pick(self, params): # NOTE: don't use this skill. it's for testing purposes
-        """
-        Picks up object at specified position with spefified gripper orientation, then rehomes maintaining the gripper orientation
-
-        Args:
-            params (7-tuple of floats) : [goal_pos, goal_quat]
-        """
-
-        # define waypoints
-        goal_pos = params[:3]
-        goal_quat = params[3:7]
-        above_pos = np.array([params[0], params[1], self.waypoint_height])
-
-        # move to above pick position 
-        params = np.concatenate([above_pos, goal_quat, [-1]])
-        self._move_to(params=params, finetune=False)
-        print("goal", goal_quat, above_pos)
-        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
-        print("pos error", above_pos - final_pos.flatten())
-
-        # move down to pick position
-        params = np.concatenate([goal_pos, goal_quat, [-1]])
-        self._move_to(params=params)
-        print("goal", goal_quat, goal_pos)
-        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
-        print("pos error", above_pos - final_pos.flatten())
-        
-        # close gripper
-        self._gripper_action(gripper_action=1)
-
-        # move back up to waypoint
-        params = np.concatenate([above_pos, goal_quat, [1]])
-        self._move_to(params=params, finetune=False)
-        print("goal", goal_quat, above_pos)
-        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
-        print("pos error", above_pos - final_pos.flatten())
-
-        # rehome
-        self._rehome(gripper_action=1, gripper_quat=goal_quat)
-
-    def _pick_from_top(self, params):
-        """
-        Picks up object at specified position from top and rehomes
-
-        Args:
-            params (3-tuple of floats) : [goal_pos]
-        """
-        # define waypoints
-        goal_pos = params[:3]
-        waypoint = np.array([params[0], params[1], self.waypoint_height])
-
-        # move to above pick position 
-        params = np.concatenate([waypoint, self.from_top_quat, [-1]])
-        self._move_to(params=params)
-
-        # move down to pick position
-        params = np.concatenate([goal_pos, self.from_top_quat, [-1]])
-        self._move_to(params=params)
-        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
-        print("pick pos error", goal_pos - final_pos.flatten())
-        
-        # close gripper
-        self._gripper_action(gripper_action=1)
-
-        # move back up to waypoint
-        params = np.concatenate([waypoint, self.from_top_quat, [1]])
-        self._move_to(params=params, finetune=False)
-
-        # rehome
-        self._rehome(gripper_action=1, gripper_quat=self.from_top_quat)
-
-    def _pick_from_side(self, params):
-        """
-        Picks up object at specified position from side and rehomes
-
-        Args:
-            params (3-tuple of floats) : [goal_pos]
-        """
-        # define waypoints
-        goal_pos = params[:3]
-        waypoint_side = np.array([params[0], params[1] + 0.2, params[2]])
-        waypoint_above = np.array([params[0], params[1], self.waypoint_height])
-
-        # move to beside pick position
-        params = np.concatenate([waypoint_side, self.from_side_quat, [-1]])
-        self._move_to(params=params, finetune=False)
-
-        # move to pick position
-        params = np.concatenate([goal_pos, self.from_side_quat, [-1]])
-        self._move_to(params=params)
-        
-        # close gripper
-        self._gripper_action(gripper_action=1)
-
-        # move up to waypoint
-        params = np.concatenate([waypoint_above, self.from_side_quat, [1]])
-        self._move_to(params=params, finetune=False)
-
-        # rehome
-        self._rehome(gripper_action=1, gripper_quat=self.from_side_quat)
-
-    def _place_from_top(self, params):
-        """
-        Places object at specified location with gripper pointing down
-
-        Args:
-            params (3-tuple of floats) : [goal_pos]
-        """
-        # define waypoints
-        goal_pos = params[:3]
-        waypoint = np.array([params[0], params[1], self.waypoint_height])
-
-        # move to above goal position 
-        params = np.concatenate([waypoint, self.from_top_quat, [1]])
-        self._move_to(params=params, finetune=False)
-
-        # move down to goal position
-        params = np.concatenate([goal_pos, self.from_top_quat, [1]])
-        self._move_to(params=params)
-        
-        # release gripper
-        self._gripper_action(gripper_action=-1)
-
-        # move back up to waypoint
-        params = np.concatenate([waypoint, self.from_top_quat, [-1]])
-        self._move_to(params=params, finetune=False)
-
-        # rehome
-        self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
-
-    def _place_from_side(self, params):
-        """
-        Places object at specified location with gripper pointing down
-
-        Args:
-            params (3-tuple of floats) : [goal_pos]
-        """
-        # define waypoints
-        goal_pos = params[:3]
-        waypoint = np.array([params[0], params[1], self.waypoint_height])
-
-        # move to above goal position 
-        params = np.concatenate([waypoint, self.from_side_quat, [1]])
-        self._move_to(params=params, finetune=False)
-
-        # move down to goal position
-        params = np.concatenate([goal_pos, self.from_side_quat, [1]])
-        self._move_to(params=params)
-        
-        # release gripper
-        self._gripper_action(gripper_action=-1)
-
-        # move back up to waypoint
-        params = np.concatenate([waypoint, self.from_side_quat, [-1]])
-        self._move_to(params=params, finetune=False)
-
-        # rehome
-        self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
-
-    def _push_z(self, params):
-        """
-        Start from specified position with gripper pointing down, pushes in z direction by some delta, then rehomes
-
-        Args: 
-            params (6-tuple of floats) : [start_pos, dz, yaw_angle[deg]]
-        """
-
-        start_pos = params[:3]
-        dz = params[3]
-        yaw = params[4]
-        gripper_action = 1 # gripper is closed
-
-        goal_pos = [start_pos[0], start_pos[1], start_pos[2] + dz]
-        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
-
-        # convert euler to quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
-        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
-        print("goal quat", goal_quat)
-        print("from top quat", self.from_top_quat)
-
-        # move to start pos
-        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params)
-
-        # move in z by dz
-        params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params, finetune=False)
-
-        # pause 
-        self._pause(gripper_action=1.0, sec=1)
-
-        # move up to waypoint 
-        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
-        self._move_to(params=params, finetune=False)
-        
-        # rehome
-        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
-
-    def _push_xy(self, params):
-        """
-        Start from specified position with gripper pointing down, pushes in x and y direction by specified delta, then rehomes
-
-        Args: 
-            params (7-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
-        """
-        start_pos = params[:3]
-        dx = params[3]
-        dy = params[4]
-        yaw = params[5]
-        gripper_action = 1 # gripper is closed
-
-        goal_pos = [start_pos[0] + dx, start_pos[1] + dy, start_pos[2]]
-        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
-
-        # convert euler to quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
-        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
-        print("goal quat", goal_quat)
-        print("from top quat", self.from_top_quat)
-
-        # move to start pos
-        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params)
-
-        # move in xy by delta 
-        params = np.concatenate([goal_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params)
-
-        # move up to waypoint 
-        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
-        self._move_to(params=params, finetune=False)
-        
-        # rehome
-        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
-
-    def _wipe_xy(self, params):
-        """
-        Wipes a surface by starting at specified position, moving on the xy plane with specified dx, dy, returns to start position, then rehomes
-        
-        Args:
-            params (7-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
-        """
-        start_pos = params[:3]
-        dx = params[3]
-        dy = params[4]
-        yaw = params[5]
-        gripper_action = 1 # gripper is closed
-
-        end_pos = [start_pos[0] + dx, start_pos[1] + dy, start_pos[2]]
-        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
-
-        # convert euler to quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
-        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
-        print("goal quat", goal_quat)
-        print("from top quat", self.from_top_quat)
-
-        # move to start pos
-        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params)
-
-        # move in xy by delta 
-        params = np.concatenate([end_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params)
-
-        # move back to start position
-        params = np.concatenate([start_pos, goal_quat, [gripper_action]])
-        self._move_to(params=params)
-
-        # move up to waypoint
-        params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
-        self._move_to(params=params, finetune=False)
-
-    def _gripper_action(self, gripper_action):
-        """
-        Closes or opens gripper
-        
-        Args:
-            gripper_action (int) : -1 to open, 1 to close
-        """
-        action = np.zeros(7)
-        action[-1] = gripper_action
-
-        for _ in range(30):
-            self.robot_interface.control(
-                controller_type=self.controller_type,
-                action=action,
-                controller_cfg=self.controller_config,
-            )
-        
-    def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None):
-        """
-        Returns to home position with gripper pointing down. Finetuning step is turned off as default
-
-        Args:
-            gripper_action (int) : -1 for open, 1 for closed
-            gripper_direction (str) : "down" for pointing down, "front" for pointing forward
-        """
-        
-        params = np.concatenate([self.reset_eef_pos, gripper_quat, [gripper_action]])
-        
-        if deg_step_size is not None:
-            self._move_to(params=params, step_size=0.015, finetune=finetune, deg_step_size=deg_step_size)
-        else:
-            self._move_to(params=params, step_size=0.015, finetune=finetune)
-            
-        final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
-        print("rehome pos error", self.reset_eef_pos - final_pos.flatten())
-
-    def _pause(self, gripper_action, sec):
-        """
-        pause in place for specified number of seconds
-        """
-        action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, gripper_action]
-
-        start_time = time.time()
-
-        while time.time() < start_time + sec:
-            self.robot_interface.control(
-                controller_type=self.controller_type,
-                action=action,
-                controller_cfg=self.controller_config,
-            )

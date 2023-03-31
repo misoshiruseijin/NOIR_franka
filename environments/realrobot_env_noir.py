@@ -16,8 +16,7 @@ from deoxys.utils import transform_utils
 from deoxys.experimental.motion_utils import reset_joints_to
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 from camera_utils import project_points_from_base_to_camera, get_camera_image
-# from detection_utils import get_object_world_coords, get_obj_pixel_coord
-from detection_utils import DetectionUtils
+from utils.detection_utils import DetectionUtils
 from getkey import getkey, keys
 
 import pdb
@@ -26,12 +25,8 @@ from pynput import keyboard
 class RealRobotEnv(gym.Env):
     """Custom Environment that follows gym interface."""
 
-    # metadata = {"render.modes": ["human"]}
-
     def __init__(
         self,
-        horizon,
-        use_skills,
         controller_type,
         general_cfg_file="config/charmander.yml",
         control_freq=20,
@@ -40,12 +35,9 @@ class RealRobotEnv(gym.Env):
             "waypoint_height" : 0.25,
             "idx2skill" : None,
         },
-        # visualize_params=True, # whether to use cameras to visualize position of 
         ignore_done=False,
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
         normalized_params=True,
-        use_yaw=True,
-        detector_params=None,
         reset_joint_pos=None,
     ): 
 
@@ -54,8 +46,6 @@ class RealRobotEnv(gym.Env):
         self.timestep = 0
         self.ignore_done = ignore_done
 
-        self.horizon = horizon
-        self.use_skills = use_skills
         self.workspace_limits = workspace_limits
         self.control_freq = control_freq
 
@@ -65,7 +55,6 @@ class RealRobotEnv(gym.Env):
         # setup robot interface
         self.controller_type = controller_type
         self.controller_config = get_default_controller_config(self.controller_type)
-        self.osc_controller_config = get_default_controller_config("OSC_YAW")
         self.robot_interface = FrankaInterface(
             general_cfg_file=general_cfg_file,
             control_freq=self.control_freq,
@@ -80,7 +69,7 @@ class RealRobotEnv(gym.Env):
             self.camera_interfaces[id].start()
         
         # setup detection utils
-        self.detection_utils = DetectionUtils(detector_params)
+        self.detection_utils = DetectionUtils()
 
         # setup skills
         self.skill = PrimitiveSkill(
@@ -93,27 +82,21 @@ class RealRobotEnv(gym.Env):
             reset_joint_pos=reset_joint_pos,
         )
 
-        self.use_yaw = use_yaw
-        self.keypoints = self.skill.get_keypoints_dict()
         self.num_skills = self.skill.num_skills
 
-        # Define action and observation spaces
-        if self.use_skills:
-            max_num_params = self.skill.max_num_params
-            print("max num params: ", max_num_params)
-            high = np.ones(self.num_skills + max_num_params)
-            low = -high
-            # param_max = 1.0
-            # high = np.concatenate([np.ones(self.num_skills), param_max * np.ones(max_num_params)])
-            # low = np.concatenate([np.zeros(self.num_skills), -param_max * np.ones(max_num_params)])
-            self.action_space = spaces.Box(low=low, high=high)
-        else:
-            high = np.ones(5) if use_yaw else np.ones(4)
-            # high = np.ones(7)
-            low = -high
-            self.action_space = spaces.Box(low=low, high=high)
+        # Define action and observation spaces - TODO this needs to be changed
+        # if self.use_skills:
+        #     max_num_params = self.skill.max_num_params
+        #     print("max num params: ", max_num_params)
+        #     high = np.ones(self.num_skills + max_num_params)
+        #     low = -high
+        #     self.action_space = spaces.Box(low=low, high=high)
+        # else:
+        #     high = np.ones(5) if use_yaw else np.ones(4)
+        #     # high = np.ones(7)
+        #     low = -high
+        #     self.action_space = spaces.Box(low=low, high=high)
 
-        # self.current_observations = self._get_current_robot_state()
         self._add_robot_state_to_cur_obs()
         self.current_infos = {}
         obs_to_use = {key : self.current_observations[key] for key in self.keys}
@@ -139,32 +122,23 @@ class RealRobotEnv(gym.Env):
     def step(self, action, execute=True): # TODO this should be changed to use skills only - we don't need low level control
 
         """
-        Commands robot to take input low level action and return  
+        Commands robot to execute skill corresponding to input action
+        
+        Args:
+            action : skill selection vector concatenated with skill parameters
         """ 
 
         if self.done:
             raise ValueError("executing action in terminated episode")
-        # print("action", action)
-        gripper_action = 1 if action[-1] > 0 else -1
-        action[-1] = gripper_action
 
-        # print("gripper_action is ", gripper_action)
-        self.robot_interface.control(
-                controller_type=self.controller_type,
-                action=action,
-                controller_cfg=self.controller_config,
-        )
-        self.timestep += 1
+        self.skill.execute_skill(action)
 
-        # self.current_observations = self._get_current_robot_state()
         reward, done, info = self._post_action(action)        
-        # print("gripper q", self.robot_interface.last_gripper_q)
         self._add_robot_state_to_cur_obs()
-        obs_to_use = {key : self.current_observations[key] for key in self.keys}
-        flattened_obs = self._flatten_obs(obs_to_use)
-        return flattened_obs, reward, done, info
+        obs = {key : self.current_observations[key] for key in self.keys}
+        return obs, reward, done, info
 
-    def _post_action(self, action): # TODO max steps check not needed? reset only when task is complete or if human wants it to??
+    def _post_action(self, action): # TODO reset only when task is complete or if human wants it to??
             """
             Do any housekeeping after taking an action.
             Args:
@@ -177,9 +151,7 @@ class RealRobotEnv(gym.Env):
             """
             reward = self.reward()
 
-            # done if number of elapsed timesteps is greater than horizon
-            self.done = (self.timestep >= self.horizon) and not self.ignore_done
-            if self.done:
+            if self.done: # NOTE there is no check for num steps - this flag should be set in child class if needed
                 self.reset()
             return reward, self.done, {}
 
@@ -187,22 +159,20 @@ class RealRobotEnv(gym.Env):
         """
         Reset internal parameters
         """
-        self.timestep = 0
+        self.timestep = 0 # TODO - don't need?
         self.done = False
         
-    def reset(self): # TODO - flattening should happen in wrapper. just return obs as dict
+    def reset(self): # TODO - flattening should happen in wrapper if needed
         """
         Reset robot to home joint configuration and returns observation
         """
         self._reset_internal()
         reset_joints_to(self.robot_interface, self.skill.reset_joint_positions)
         time.sleep(0.5)
-        # self.current_observations = self._get_current_robot_state()
         self._add_robot_state_to_cur_obs()
-        obs_to_use = {key : self.current_observations[key] for key in self.keys}
-        flattened_obs = self._flatten_obs(obs_to_use)    
+        obs = {key : self.current_observations[key] for key in self.keys}
         self.current_infos = {}
-        return flattened_obs
+        return obs
 
     def _get_current_robot_state(self):
         """
@@ -221,7 +191,7 @@ class RealRobotEnv(gym.Env):
         current_euler = transform_utils.mat2euler(current_rot)
         current_yaw = current_euler[-1]
 
-        robot_state = { # TODO - include all of these by default. handle the postprocessing in wrapper
+        robot_state = { 
             "eef_pos" : current_pos,
             "eef_quat" : current_quat,
             "eef_yaw" : current_yaw,
@@ -229,49 +199,49 @@ class RealRobotEnv(gym.Env):
         }
         return robot_state
 
-    def _check_action_in_ws_bounds(self, action): # TODO shouldn't need this if not using low level control
-        """
-        Checks if action will keep robot within workspace boundaries
-        """
-        sf = 3 # TODO - tune this: higher is more cautious
-        scale = self.controller_config["action_scale"]["translation"] # controller internally scales translation action inputs by this value
-        scaled_action = scale * action
-        eef_pos = self.current_observations["eef_pos"]
+    # def _check_action_in_ws_bounds(self, action): # shouldn't need this if not using low level control
+    #     """
+    #     Checks if action will keep robot within workspace boundaries
+    #     """
+    #     sf = 3 # TODO - tune this: higher is more cautious
+    #     scale = self.controller_config["action_scale"]["translation"] # controller internally scales translation action inputs by this value
+    #     scaled_action = scale * action
+    #     eef_pos = self.current_observations["eef_pos"]
         
-        cur_x_in_bounds = self.workspace_limits["x"][0] < eef_pos[0] < self.workspace_limits["x"][1]
-        cur_y_in_bounds = self.workspace_limits["y"][0] < eef_pos[1] < self.workspace_limits["y"][1]
-        cur_z_in_bounds = self.workspace_limits["z"][0] < eef_pos[2] < self.workspace_limits["z"][1]
+    #     cur_x_in_bounds = self.workspace_limits["x"][0] < eef_pos[0] < self.workspace_limits["x"][1]
+    #     cur_y_in_bounds = self.workspace_limits["y"][0] < eef_pos[1] < self.workspace_limits["y"][1]
+    #     cur_z_in_bounds = self.workspace_limits["z"][0] < eef_pos[2] < self.workspace_limits["z"][1]
 
-        # if already outside workspace, allow action if it brings it inside workspace
-        if not cur_x_in_bounds:
-            print("EEF already out of bounds in x")
-            x_good = (
-                eef_pos[0] < self.workspace_limits["x"][0] and action[0] > 0
-                or eef_pos[0] > self.workspace_limits["x"][1] and action[0] < 0
-            )
-        else:
-            x_good = self.workspace_limits["x"][0] < eef_pos[0] + sf * scaled_action[0] / self.control_freq < self.workspace_limits["x"][1]
+    #     # if already outside workspace, allow action if it brings it inside workspace
+    #     if not cur_x_in_bounds:
+    #         print("EEF already out of bounds in x")
+    #         x_good = (
+    #             eef_pos[0] < self.workspace_limits["x"][0] and action[0] > 0
+    #             or eef_pos[0] > self.workspace_limits["x"][1] and action[0] < 0
+    #         )
+    #     else:
+    #         x_good = self.workspace_limits["x"][0] < eef_pos[0] + sf * scaled_action[0] / self.control_freq < self.workspace_limits["x"][1]
 
-        if not cur_y_in_bounds:
-            print("EEF already out of bounds in y")
-            y_good = (
-                eef_pos[1] < self.workspace_limits["y"][0] and action[1] > 0
-                or eef_pos[1] > self.workspace_limits["y"][1] and action[1] < 0
-            )
-        else:
-            y_good = self.workspace_limits["y"][0] < eef_pos[1] + sf * scaled_action[1] / self.control_freq < self.workspace_limits["y"][1]
+    #     if not cur_y_in_bounds:
+    #         print("EEF already out of bounds in y")
+    #         y_good = (
+    #             eef_pos[1] < self.workspace_limits["y"][0] and action[1] > 0
+    #             or eef_pos[1] > self.workspace_limits["y"][1] and action[1] < 0
+    #         )
+    #     else:
+    #         y_good = self.workspace_limits["y"][0] < eef_pos[1] + sf * scaled_action[1] / self.control_freq < self.workspace_limits["y"][1]
 
-        if not cur_z_in_bounds:
-            print("EEF already out of bounds in z")
-            z_good = (
-                eef_pos[2] < self.workspace_limits["z"][0] and action[2] > 0
-                or eef_pos[2] > self.workspace_limits["z"][1] and action[2] < 0
-            )
-        else:
-            z_good = self.workspace_limits["z"][0] < eef_pos[2] + sf * scaled_action[2] / self.control_freq < self.workspace_limits["z"][1]
+    #     if not cur_z_in_bounds:
+    #         print("EEF already out of bounds in z")
+    #         z_good = (
+    #             eef_pos[2] < self.workspace_limits["z"][0] and action[2] > 0
+    #             or eef_pos[2] > self.workspace_limits["z"][1] and action[2] < 0
+    #         )
+    #     else:
+    #         z_good = self.workspace_limits["z"][0] < eef_pos[2] + sf * scaled_action[2] / self.control_freq < self.workspace_limits["z"][1]
         
-        print("action is ok in x y z", x_good, y_good, z_good)
-        return x_good and y_good and z_good
+    #     print("action is ok in x y z", x_good, y_good, z_good)
+    #     return x_good and y_good and z_good
 
     def _update_param_visualization(self, action): # TODO - check the case where multiple positoins are given and fix colors
         """
@@ -360,15 +330,15 @@ class RealRobotEnv(gym.Env):
             cv2.imwrite(f'param_vis_images/camera{camera_id}_with_params.png', im[:, :, ::-1])
             cv2.imwrite(f'param_vis_images/camera{camera_id}_raw.png', im_raw[:, :, ::-1])
 
-    def human_feedback_request(self, action): # TODO don't need this?
+    # def human_feedback_request(self, action): # don't need this?
 
-        """
-        Algorithm calls this function to ask for human feedback. A visualization of parameters is updated
-        Args:
-            pos_list : list of positions to display (at most 2 elements)
-            yaw : yaw angle
-        """
-        self._update_param_visualization(action)
+    #     """
+    #     Algorithm calls this function to ask for human feedback. A visualization of parameters is updated
+    #     Args:
+    #         pos_list : list of positions to display (at most 2 elements)
+    #         yaw : yaw angle
+    #     """
+    #     self._update_param_visualization(action)
 
     # TODO - need new function that: presents objects -> human choose obj -> present relevant skills -> human chooses skill -> human chooses param -> execute
 
@@ -380,7 +350,7 @@ class RealRobotEnv(gym.Env):
     def update(self):
         raise NotImplementedError()    
 
-    def get_object_pos(self, hsv_low, hsv_high, obj_name="", wait=True, dilation=False):
+    def get_object_pos(self, obj_name="", wait=True): # TODO - this needs to be updated with OWL-VIT
         """
         Finds position of an object in world coordinates
         
@@ -388,9 +358,15 @@ class RealRobotEnv(gym.Env):
             hsv_low : lower bound of HSV values of object of interest
             hsv_high : upper bound of HSV values of object of interest
         """
-        return self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], hsv_low, hsv_high, obj_name=obj_name, wait=wait, dilation=dilation)
+        return self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], obj_name=obj_name, wait=wait)
+    
+    
 
-    def _flatten_obs(self, obs_dict, verbose=False): # TODO - this should go in wrapper
+
+    """
+    TODO - below functions should go in wrapper if needed
+    """
+    def _flatten_obs(self, obs_dict, verbose=False): 
         """
         Filters keys of interest out and concatenate the information.
 
@@ -410,7 +386,7 @@ class RealRobotEnv(gym.Env):
                 ob_lst.append(np.array(obs_dict[key]).flatten())
         return np.concatenate(ob_lst)
 
-    def seed(self, seed=None): # TODO - this should go in wrapper
+    def seed(self, seed=None): 
         """
         Utility function to set numpy seed
 

@@ -42,7 +42,7 @@ class RealRobotEnv(gym.Env):
         ignore_done=False,
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
         normalized_params=True,
-        reset_joint_pos=None,
+        reset_joint_pos = [0.08308526, -0.41477541, -0.01531586, -2.38322237, -0.01709504, 1.95553848, 0.87790016]
     ): 
 
         super().__init__()

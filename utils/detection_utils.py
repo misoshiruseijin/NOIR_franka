@@ -59,7 +59,7 @@ class DetectionUtils:
             box = [round(i, 2) for i in box.tolist()]
             obj_name = texts[label]
             if score >= obj2thresh[obj_name]:
-                print(f"Detected {obj_name} with confidence {round(score.item(), 3)} at location {box}")
+                # print(f"Detected {obj_name} with confidence {round(score.item(), 3)} at location {box}")
                 coords[obj_name]["boxes"].append(box)
                 coords[obj_name]["scores"].append(score.item())
                 center = ( round((box[0] + box[2])/2), round((box[1] + box[3])/2) )
@@ -94,6 +94,7 @@ class DetectionUtils:
                     draw.text((txt_start_pos[0], txt_start_pos[1]+28*idx), key, font = font, align ="left", fill=color) 
                     idx += 1
             image.save(f"camera{camera_id}.png")
+            print(f"Saving camera{camera_id}.png")
         return coords        
 
     # convert back to 3d world coordinates
@@ -128,22 +129,17 @@ class DetectionUtils:
             thresholds (list of floats) : detection confidence score thresholds for each object of interest
         """
 
-        found_in_0, found_in_1 = False, False
+        # get 2d pixel coordinates of all objects in both cameras
+        found_in_0, found_in_1 = False, False # exactly one instance for each object is found
         
-
-
-        # get object pixel positions in both cameras
-        pos_in_cam0 = None
-        pos_in_cam1 = None
-
-        if wait:
-            while pos_in_cam0 is None:
-                pos_in_cam0 = self.get_obj_pixel_coord(camera_interface0, camera_id=0, texts=texts, thresholds=thresholds)
-            while pos_in_cam1 is None:
-                pos_in_cam1 = self.get_obj_pixel_coord(camera_interface1, camera_id=1, texts=texts, thresholds=thresholds)
-        else:
-            pos_in_cam0 = self.get_obj_pixel_coord(camera_interface0, camera_id=0, texts=texts, thresholds=thresholds)
-            pos_in_cam1 = self.get_obj_pixel_coord(camera_interface1, camera_id=1, texts=texts, thresholds=thresholds)
+        # keep trying until all objects are found in both cameras
+        while not found_in_0 or not found_in_1:
+            coords0 = self.get_obj_pixel_coord(camera_interface0, camera_id=0, texts=texts, thresholds=thresholds)
+            n_instances = np.array([len(value["scores"]) for value in coords0.values()])
+            found_in_0 = np.all(n_instances == 1) 
+            coords1 = self.get_obj_pixel_coord(camera_interface1, camera_id=1, texts=texts, thresholds=thresholds)
+            n_instances = np.array([len(value["scores"]) for value in coords1.values()])
+            found_in_1 = np.all(n_instances == 1)
 
         # get camera intrinsic and extrinsic matrices
         camera_to_base_matrix_0 = get_camera_extrinsic_matrix(camera_id=0)
@@ -154,21 +150,20 @@ class DetectionUtils:
         camera_intrinsic_matrix_1 = get_camera_intrinsic_matrix(camera_id=1)
         base_to_camera_matrix_1 = pose_inv(camera_to_base_matrix_1)
 
-        # estimate position in world coordinate (robot base frame)
-        if pos_in_cam0 is None or pos_in_cam1 is None:
-            return None
+        # get 3d position estimate for each object
+        pos_in_world = {}
+        for key in coords0:
+            pos_3d = self.convert_points_from_camera_to_base(
+                np.array(coords0[key]["centers"][0], dtype=float),
+                np.array(coords1[key]["centers"][0], dtype=float),
+                camera_intrinsic_matrix_0,
+                camera_intrinsic_matrix_1,
+                base_to_camera_matrix_0,
+                base_to_camera_matrix_1,
+            )
+            pos_in_world[key] = pos_3d.flatten()
 
-        pos_in_world = self.convert_points_from_camera_to_base(
-            pos_in_cam0,
-            pos_in_cam1,
-            camera_intrinsic_matrix_0,
-            camera_intrinsic_matrix_1,
-            base_to_camera_matrix_0,
-            base_to_camera_matrix_1
-        )
-
-        return pos_in_world.flatten()
-
+        return pos_in_world
 
 
 

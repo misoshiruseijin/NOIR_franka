@@ -34,7 +34,7 @@ def main():
         robot_joints = robot_interface.last_q
         
         print("eef_pos", eef_pos)
-        # print("joint q", robot_joints)
+        print("joint q", robot_joints)
         print("eef_quat", eef_quat)
 
 main()

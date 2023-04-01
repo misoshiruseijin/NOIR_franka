@@ -72,7 +72,8 @@ class TablesettingEnv(RealRobotEnv):
             },
             detector_config={
                 "texts" : ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"], # text description of objects of interest
-                "thresholds" : [0.05, 0.05, 0.05, 0.07],
+                # "thresholds" : [0.05, 0.05, 0.05, 0.07], # works with cam0 but not with cam1
+                "thresholds" : [0.02, 0.02, 0.02, 0.02],
             },
             gripper_thresh=0.04,
             reset_joint_pos=reset_joint_pos, 

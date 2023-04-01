@@ -30,7 +30,10 @@ reset_joint_positions = [
 ]
 
 
-env = TablesettingEnv()
+env = TablesettingEnv(
+    normalized_params=False
+)
+# env.step(action=[1, 0, 0.45775618, 0.03207872, 0.35534091])
 pos = env._update_obj_positions()
 
 

@@ -35,6 +35,10 @@ class RealRobotEnv(gym.Env):
             "waypoint_height" : 0.25,
             "idx2skill" : None,
         },
+        detector_config={
+            "texts" : [],
+            "thresholds" : []
+        },
         ignore_done=False,
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
         normalized_params=True,
@@ -68,8 +72,10 @@ class RealRobotEnv(gym.Env):
         for id in self.camera_interfaces.keys():
             self.camera_interfaces[id].start()
         
-        # setup detection utils
+        # setup detection-related things
         self.detection_utils = DetectionUtils()
+        self.texts = detector_config["texts"]
+        self.thresholds = detector_config["thresholds"]
 
         # setup skills
         self.skill = PrimitiveSkill(
@@ -128,9 +134,6 @@ class RealRobotEnv(gym.Env):
             action : skill selection vector concatenated with skill parameters
         """ 
 
-        if self.done:
-            raise ValueError("executing action in terminated episode")
-
         self.skill.execute_skill(action)
 
         reward, done, info = self._post_action(action)        
@@ -151,9 +154,9 @@ class RealRobotEnv(gym.Env):
             """
             reward = self.reward()
 
-            if self.done: # NOTE there is no check for num steps - this flag should be set in child class if needed
-                self.reset()
-            return reward, self.done, {}
+            # if self.done: # NOTE there is no check for num steps - this flag should be set in child class if needed
+            #     self.reset()
+            return reward, False, {}
 
     def _reset_internal(self):
         """
@@ -358,7 +361,7 @@ class RealRobotEnv(gym.Env):
             hsv_low : lower bound of HSV values of object of interest
             hsv_high : upper bound of HSV values of object of interest
         """
-        return self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], obj_name=obj_name, wait=wait)
+        return self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=self.thresholds, wait=wait)
     
     
 

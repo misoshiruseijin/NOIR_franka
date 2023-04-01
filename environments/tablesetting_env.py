@@ -39,6 +39,7 @@ class TablesettingEnv(RealRobotEnv):
                 "spoon_pos",
                 "cup_pos"
             ]
+
         self.current_observations = {}
         self.bowl_l_pos = np.zeros(3)
         self.bowl_s_pos = np.zeros(3)
@@ -54,18 +55,6 @@ class TablesettingEnv(RealRobotEnv):
         # self.grasping_pan = False
         # self.grasping_sausage = False
 
-        # # HSV thresholds for objects
-        # self.hsv_thresh = {
-        #     "sausage" : {
-        #         "low" : np.array([0, 120, 20]),
-        #         "high" : np.array([5, 255, 255]),
-        #     },
-        #     "pan" : {
-        #         "low" : np.array([100, 130, 50]), # blue tape handle
-        #         "high" : np.array([120, 255, 255]),
-        #     },
-        # }
-
         self.current_observations = {key : None for key in self.keys}
         self._update_current_observations()
 
@@ -80,6 +69,10 @@ class TablesettingEnv(RealRobotEnv):
                     0 : "pick_from_top",
                     1 : "place_from_top",
                 },
+            },
+            detector_config={
+                "texts" : ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"], # text description of objects of interest
+                "thresholds" : [0.05, 0.05, 0.05, 0.07],
             },
             gripper_thresh=0.04,
             reset_joint_pos=reset_joint_pos, 
@@ -249,35 +242,19 @@ class TablesettingEnv(RealRobotEnv):
         info = {}
 
         self.update()
-        num_timesteps = 0
-        done, skill_done, skill_success = False, False, False
-
+       
         if self.normalized_params:
             action = self.skill.unnormalize_params(action)
         
-        # self._update_current_observations()
-        while not done and not skill_done:
-            action_ll, skill_done, skill_success = self.skill.get_action(action)
-            obs, _, done, info = super().step(action_ll)
-            num_timesteps += 1
-        # self._update_current_observations()
-        
-        info["num_ll_steps"] = num_timesteps
-        info["num_hl_steps"] = 1
-    
-        if done: # horizon exceeded
-            print(f"-----------Horizon {self.timestep} Reached--------------")
+        super().step(action)
 
-        # # if action is executed, wait for a few seconds to update the state
-        # if go_signal:
-        #     print("------- If moving objects, do it now. State update in 5 seconds ----------")
-        #     time.sleep(0.005)
-        
         self.update()
         obs = self.current_observations
 
         # process rewards
         reward = self._get_reward()
+
+        done = False
 
         # check success
         if self._check_success(): # if success (including accidental success), terminate

@@ -353,16 +353,19 @@ class RealRobotEnv(gym.Env):
     def update(self):
         raise NotImplementedError()    
 
-    def get_object_pos(self, obj_name="", wait=True): # TODO - this needs to be updated with OWL-VIT
+    def get_object_pos(self, wait=True): # TODO - this needs to be updated with OWL-VIT
         """
-        Finds position of an object in world coordinates
-        
+        Find positions of objects defined in self.texts
+
         Args:
-            hsv_low : lower bound of HSV values of object of interest
-            hsv_high : upper bound of HSV values of object of interest
+            wait (bool) : TODO - this is not used rn. implement it if needed
+
+        Returns:
+            obj_positions (dict) : element is in the form { obj name as defined in self.texts : obj position (3d array) }
         """
-        return self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=self.thresholds, wait=wait)
-    
+
+        obj_positions = self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=self.thresholds, wait=wait)
+        return obj_positions    
     
 
 

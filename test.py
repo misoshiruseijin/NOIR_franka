@@ -33,10 +33,11 @@ reset_joint_positions = [
 env = TablesettingEnv(
     normalized_params=False
 )
-# env.step(action=[1, 0, 0.45775618, 0.03207872, 0.35534091])
-pos = env._update_obj_positions()
-
-
+obs = env.reset()
+cup_pos = obs["shiny silver cup"]
+pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
+pdb.set_trace()
+obs, reward, done, info = env.step(action=np.concatenate([[1, 0], pick_pos]))
 
 
 # controller_type = "OSC_POSE"

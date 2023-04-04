@@ -34,29 +34,16 @@ class TablesettingEnv(RealRobotEnv):
         if self.keys is None:
             self.keys = [
                 "eef_pos", "gripper_state",
-                "bowl_l_pos", 
-                "bowl_s_pos",
-                "spoon_pos",
-                "cup_pos"
+                "light blue bowl", 
+                "red bowl",
+                "red and blue spoon",
+                "shiny silver cup",
             ]
 
         self.current_observations = {}
-        self.bowl_l_pos = np.zeros(3)
-        self.bowl_s_pos = np.zeros(3)
-        self.spoon_pos = np.zeros(3)
-        self.cup_pos = np.zeros(3)
-
-        # # flags for reward computation
-        # self.reward_given = False
-        # self.pan_on_stove = False
-        # self.sausage_on_pan = False
-        # self.sausage_cooked = False
-        # self.sausage_in_bread = False
-        # self.grasping_pan = False
-        # self.grasping_sausage = False
 
         self.current_observations = {key : None for key in self.keys}
-        self._update_current_observations()
+        # self._update_current_observations()
 
         super().__init__(
             controller_type="OSC_POSE",
@@ -79,6 +66,7 @@ class TablesettingEnv(RealRobotEnv):
             reset_joint_pos=reset_joint_pos, 
         )
 
+        self.reward_given = False # TODO - should be able to eliminate this
         self.reward_scale = reward_scale
         self.num_skills = self.skill.num_skills
         self.normalized_params = normalized_params
@@ -132,7 +120,6 @@ class TablesettingEnv(RealRobotEnv):
         """
         Updates task status using camera input
         """
-        # # TODO - make sure this works
         # print("\nUpdate task status")
         # robot_state = self._get_current_robot_state()
         # eef_pos = robot_state["eef_pos"]
@@ -156,49 +143,14 @@ class TablesettingEnv(RealRobotEnv):
         # if not self.sausage_cooked and self.sausage_on_pan and self.pan_on_stove:
         #     self.sausage_cooked = True 
 
-        # # TODO - make sure this works
-        return
-
-    def _update_obj_positions(self, wait=True): # TODO
-        """
-        Use camera input to update object positions
-
-        Args:
-            wait_until_obj_found (bool) :
-                if True waits until each object is found
-                if Flase, tries to find each object once. if not found, use previs locations
-        """
-        # if wait:
-        #     self.sausage_pos = self.get_object_pos(self.hsv_thresh["sausage"]["low"], self.hsv_thresh["sausage"]["high"], "sausage")        
-        #     # print(f"Found sausage at {self.sausage_pos}")
-        #     if self.sausage_pos[-1] < 0.02: # if estimated height is below some threshold, assume sausage is on the table
-        #         self.sausage_pos[-1] = 0.005
-
-        #     self.pan_pos = self.get_object_pos(self.hsv_thresh["pan"]["low"], self.hsv_thresh["pan"]["high"], "pan")
-        #     if self.pan_pos[-1] < 0.02:
-        #         self.pan_pos[-1] = 0.01
-        #     # print(f"Found pan at {self.pan_pos}")
-        # else:
-        #     sausage_pos = self.get_object_pos(self.hsv_thresh["sausage"]["low"], self.hsv_thresh["sausage"]["high"], "sausage", wait=False)        
-        #     pan_pos = self.get_object_pos(self.hsv_thresh["pan"]["low"], self.hsv_thresh["pan"]["high"], "pan", wait=False)
-        #     if sausage_pos is not None:
-        #         if sausage_pos[-1] < 0.02:
-        #             sausage_pos[-1] = 0.005
-        #         self.sausage_pos = sausage_pos
-        #     if pan_pos is not None:
-        #         if pan_pos[-1] < 0.02:
-        #             pan_pos[-1] = 0.01
-        #         self.pan_pos = pan_pos
-        pos = self.get_object_pos()
-        return pos
+        return        
 
     def update(self, wait=True):
         """
         Updates keypoints, object positions, and task state
         """
-        self._update_obj_positions(wait=wait)
         self._update_task_status()
-        self._update_current_observations()
+        self._update_current_observations(wait=wait)
 
     def human_reward(self, action): # TODO - just here for reference
         print("=====human reward call=======")
@@ -242,7 +194,7 @@ class TablesettingEnv(RealRobotEnv):
         # print("go signal", go_signal)
         info = {}
 
-        self.update()
+        # self.update()
        
         if self.normalized_params:
             action = self.skill.unnormalize_params(action)
@@ -255,7 +207,7 @@ class TablesettingEnv(RealRobotEnv):
         # process rewards
         reward = self._get_reward()
 
-        done = False
+        done = False # TODO - if there are termination conditions, add it here
 
         # check success
         if self._check_success(): # if success (including accidental success), terminate
@@ -263,18 +215,14 @@ class TablesettingEnv(RealRobotEnv):
         
         return obs, reward, done, info   
        
-    def _update_current_observations(self): # TODO - get object position from OWL-VIT
+    def _update_current_observations(self, wait=True):
         """
         Updates self.current_observations dict with environment-specific observations
         """
-
-        env_obs = {
-            "bowl_l_pos" : self.bowl_l_pos, 
-            "bowl_s_pos" : self.bowl_s_pos,
-            "spoon_pos" : self.spoon_pos,
-            "cup_pos" : self.cup_pos,
-        }
-        self.current_observations.update(env_obs)
+        obj_positions = self.get_object_pos(wait=wait)
+        # TODO - if needed, adjust obj position observations (e.g. set every z value < eps to zero)
+        
+        self.current_observations.update(obj_positions)
         print("updated current observations", self.current_observations)
 
     def reset(self):
@@ -282,9 +230,6 @@ class TablesettingEnv(RealRobotEnv):
         print("Resetting...")
         # reset flags
         self.reward_given = False
-        # self.pan_on_stove, self.sausage_on_pan, self.sausage_cooked, self.sausage_in_bread = False, False, False, False
-        # self.grasping_pan = False
-        # self.grasping_sausage = False
 
         super().reset()
         self._update_current_observations()       

@@ -69,7 +69,7 @@ env = TablesettingEnv(
 obs = env.reset()
 cup_pos = obs["shiny silver cup"]
 pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
-
+pick_pos = [0.54657, 0.01063, 0.15]
 skill_selection_vec = np.zeros(env.num_skills)
 
 skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1
@@ -97,6 +97,8 @@ pdb.set_trace()
 # pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer
 # pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
 
+# pick_pos = [0.54657, 0.01063, 0.15]
+# skills._pick_from_top(pick_pos)
 # skills._move_to(params=np.concatenate([pos, quat, [-1]]))
 # final_quat, final_pos = robot_interface.last_eef_quat_and_pos
 # error = pos - final_pos.flatten()

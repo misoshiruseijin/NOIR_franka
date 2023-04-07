@@ -52,10 +52,11 @@ class TablesettingEnv(RealRobotEnv):
             workspace_limits=workspace_limits,
             skill_config={
                 "waypoint_height" : 0.25,
-                "idx2skill" : {
-                    0 : "pick_from_top",
-                    1 : "place_from_top",
-                },
+                # "idx2skill" : {
+                #     0 : "pick_from_top",
+                #     1 : "place_from_top",
+                # },
+                # TODO - include objID2skillID dict here
             },
             detector_config={
                 "texts" : ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"], # text description of objects of interest

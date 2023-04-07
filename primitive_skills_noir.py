@@ -59,6 +59,8 @@ class PrimitiveSkill:
             aff_pos_thresh (dict) : maps skill name (str) to reaching position threshold for computing affordance scores. If unspecified, uses default settings
         """
 
+        # for now, just don't pass in idx2skill - TODO may need to change if we end up doing EF
+        assert idx2skill is None, "Inputting idx2skill is not allowed at the moment"
         self.robot_interface = robot_interface
         self.controller_type = controller_type
         self.controller_config = controller_config
@@ -72,7 +74,7 @@ class PrimitiveSkill:
             self.reset_joint_positions = [0.09162008114028396, -0.19826458111314524, -0.01990020486871322, -2.4732269941140346, -0.01307073642274261, 2.30396583422025, 0.8480939705504309]
         else:
             self.reset_joint_positions = reset_joint_pos
-                
+
         self.waypoint_height = waypoint_height # height of waypoint in pick, place, push skills
         if workspace_limits is not None:
             self.workspace_limits = workspace_limits

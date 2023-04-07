@@ -20,7 +20,7 @@ from deoxys.camera_redis_interface import CameraRedisSubInterface
 from deoxys import config_root
 
 
-def get_camera_intrinsic_matrix(camera_id=0):
+def get_camera_intrinsic_matrix(camera_id):
     """
     Fill out this function to put the intrinsic matrix of your camera.
     Returns:
@@ -42,7 +42,7 @@ def get_camera_intrinsic_matrix(camera_id=0):
     return K
 
 
-def get_camera_extrinsic_matrix(camera_id=0):
+def get_camera_extrinsic_matrix(camera_id):
     """
     Fill out this function to put the extrinsic matrix of your camera.
     This should correspond to the camera pose in the robot base frame. 
@@ -74,11 +74,11 @@ def get_camera_extrinsic_matrix(camera_id=0):
 
     if camera_id == 0:
         R[:3, :3] = np.array([
-            [ 0.86122791, 0.39275043, -0.32254237],
-            [ 0.50732722, -0.626808, 0.59138044],
-            [ 0.03009279, -0.67294787, -0.73907753],       
+            [ 0.85744557,  0.29368317, -0.42253672],
+            [ 0.50697709 ,-0.62272824 , 0.59597295],
+            [-0.08809832 ,-0.72523081, -0.68284622],
         ])
-        R[:3, 3] = np.array([0.62883869, -0.44977122, 0.59837152])
+        R[:3, 3] = np.array([0.62791933, -0.44117322,  0.60937688])
 
     if camera_id == 1:
         R[:3, :3] = np.array([
@@ -86,7 +86,7 @@ def get_camera_extrinsic_matrix(camera_id=0):
             [0.58780064, 0.56526125, -0.57876603],
             [-0.08282167, -0.66959971, -0.73808997],
         ])
-        R[:3, 3] = np.array([0.66133318, 0.3837803,  0.54324011])
+        R[:3, 3] = np.array([0.62760096, -0.47136479, 0.5347833])
         
     return R
 

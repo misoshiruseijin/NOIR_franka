@@ -84,7 +84,7 @@ class RealRobotEnv(gym.Env):
             robot_interface=self.robot_interface,
             waypoint_height=skill_config["waypoint_height"],
             workspace_limits=self.workspace_limits,
-            idx2skill=skill_config["idx2skill"],
+            # idx2skill=skill_config["idx2skill"],
             reset_joint_pos=reset_joint_pos,
         )
 

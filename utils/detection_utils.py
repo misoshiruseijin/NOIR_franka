@@ -17,8 +17,6 @@ class DetectionUtils:
         self.processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
         self.model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
 
-
-    # TODO - replace this with OWL-VIT
     def get_obj_pixel_coord(self, camera_interface, camera_id, texts, thresholds, save_img=True, n_instances=1):
         """
         Get center 2d coordinate of detected blob in image frame
@@ -34,7 +32,7 @@ class DetectionUtils:
                 { text : [] } for objects not found
         """
         
-        # get camera image and conver to hsv
+        # get camera image and conver to rgb
         raw_image = get_camera_image(camera_interface)
         rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
         image = Image.fromarray(np.uint8(rgb_image))

@@ -29,6 +29,39 @@ reset_joint_positions = [
     0.8480939705504309,
 ]
 
+# # these can be defined in each environment
+# obj_names = ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"]
+
+# # get dict from json
+
+# # ask for user input for object
+
+# # get relevant skills from dict
+# # get skill name -> id
+
+# # generate parameter range
+# # present it to human
+# # parameter input
+
+# # execute skill
+
+
+# # defined in parent env and passed to detector
+# idx2skill = {
+#     0 : "pick_from_top",
+#     1 : "place_from_top",
+# }
+
+# # ask for object input
+# obj = ""
+# while not obj in obj_names:
+#     obj = input(f"select object from: {obj_names}\n")
+
+# # get relevant skill names
+# relevant_skills = [idx2skill[idx] for idx in obj2skillid[obj]]
+# skill = ""
+# while not skill in idx2skill.values():
+#     skill = input(f"select skill from {relevant_skills}\n")
 
 env = TablesettingEnv(
     normalized_params=False
@@ -36,9 +69,13 @@ env = TablesettingEnv(
 obs = env.reset()
 cup_pos = obs["shiny silver cup"]
 pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
-pdb.set_trace()
-obs, reward, done, info = env.step(action=np.concatenate([[1, 0], pick_pos]))
 
+skill_selection_vec = np.zeros(env.num_skills)
+
+skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1
+
+obs, reward, done, info = env.step(action=np.concatenate([skill_selection_vec, pick_pos]))
+pdb.set_trace()
 
 # controller_type = "OSC_POSE"
 # robot_interface = FrankaInterface(
@@ -56,9 +93,9 @@ obs, reward, done, info = env.step(action=np.concatenate([[1, 0], pick_pos]))
 #     robot_interface=robot_interface,
 # )
 
-# # pos = [0.43794176, -0.04834167, 0.3170166]
+# pos = [0.43794176, -0.04834167, 0.3170166]
 # pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer
-# # pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
+# pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
 
 # skills._move_to(params=np.concatenate([pos, quat, [-1]]))
 # final_quat, final_pos = robot_interface.last_eef_quat_and_pos

@@ -8,8 +8,8 @@ from transformers import OwlViTProcessor, OwlViTForObjectDetection
 processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
 model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
 
-image = Image.open("testimg.png")
-texts = ["red spatula"]
+image = Image.open("photos/whiteboard1_camera1.png")
+texts = ["dark blue eraser"]
 inputs = processor(text=texts, images=image, return_tensors="pt")
 outputs = model(**inputs)
 
@@ -28,7 +28,7 @@ n_instances = 1
 save_img = True
 
 obj2thresh = {
-    "red spatula" : 0.05,
+    "dark blue eraser" : 0.003,
 }
 
 for box, score, label in zip(boxes, scores, labels):
@@ -40,6 +40,7 @@ for box, score, label in zip(boxes, scores, labels):
         coords[obj_name]["scores"].append(score.item())
         center = ( round((box[0] + box[2])/2), round((box[1] + box[3])/2) )
         coords[obj_name]["centers"].append(center)
+        print("score", score)
     
 # extract the top n_instances objects - TODO if needed, allow different max number for each object
 for key in coords:

@@ -9,6 +9,10 @@ sys.path.append("..")
 sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
 from primitive_skills_noir import PrimitiveSkill
 from environments.tablesetting_env import TablesettingEnv
+from environments.tofu_env import TofuEnv
+from environments.whiteboard_env import WhiteboardEnv
+from environments.realrobot_env_noir import RealRobotEnv
+
 
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.franka_interface import FrankaInterface
@@ -58,23 +62,24 @@ obj2skill = {
     "light blue bowl" : ["pick_from_top", "pick_from_side", "push_xy"], 
     "shiny silver cup" : ["pick_from_top", "pick_from_side", "push_xy"],
     "red and blue spoon" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "knife" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "eraser" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "none_tablesetting" : ["place_from_top", "place_from_side"],
-    "none_tofu" : ["push_z", "place_from_top"],
-    "none_whiteboard" : ["wipe_xy", "place_from_top"]
+    "red spatula" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "dark blue eraser" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "none_tablesetting" : ["place_from_top", "place_from_side", "reset_joints"],
+    "none_tofu" : ["push_z", "place_from_top", "reset_joints"],
+    "none_whiteboard" : ["wipe_xy", "place_from_top", "reset_joints"]
 }
-def table_setting_demo():
-    # intialize environment and get initial observation
-    env = TablesettingEnv(
-        normalized_params=False,
-    )
+
+task2env = {
+    "tablesetting" : TablesettingEnv,
+    "tofu" : TofuEnv,
+    "whiteboard" : WhiteboardEnv,
+}
+
+def terminal_shared_autonomy(env:RealRobotEnv, obj_names):
+    
     obs = env.reset()
     
-    # get object names
-    obj_names = env.texts.copy()
-    obj_names.append("none_tablesetting")
-
+    # ask for human input
     while True:
         obj_name = ""
         skill_name = ""
@@ -82,15 +87,15 @@ def table_setting_demo():
         # object selection
         while obj_name not in obj_names:
             obj_name = input(f"select object from {obj_names}:\n")
-        
+
         # skill selection
         skill_options = obj2skill[obj_name]
         while skill_name not in skill_options:
             skill_name = input(f"choose skill from {skill_options}:\n")
-        
+
         # param input
         params = []
-        param_dim = env.skill.skills[skill_name]["num_params"] # dimension of params for selected skill
+        param_dim = env.skill.skills[skill_name]["num_params"]
         while not len(params) == param_dim:
             if "none" not in obj_name:
                 print(f"Position of {obj_name} is {obs[obj_name]}")
@@ -104,13 +109,34 @@ def table_setting_demo():
         skill_selection_vec[skill_idx] = 1
         action = np.concatenate([skill_selection_vec, params])
         env.step(action)
-        
 
-def whiteboard_demo():
-    pass
+def run_demo(task_name):
+    env_class = task2env[task_name]
+    env = env_class(
+        normalized_params=False,
+    )
 
-def tofu_demo():
-    pass
+    # get object names
+    obj_names = env.texts.copy()
+    obj_names.append(f"none_{task_name}")
+    terminal_shared_autonomy(env, obj_names)
+
+# def table_setting_demo():
+#     # intialize environment and get initial observation
+#     env = TablesettingEnv(
+#         normalized_params=False,
+#     )
+#     obs = env.reset()
+    
+#     # get object names
+#     obj_names = env.texts.copy()
+#     obj_names.append("none_tablesetting")
+
+# def whiteboard_demo():
+#     pass
+
+# def tofu_demo():
+#     pass
 
 # def whiteboard_demo():
 #     eraser_pos = [0.46666203, 0.15260639, 0.008]
@@ -169,20 +195,14 @@ def tofu_demo():
 
 def main(args):
 
-    if args.task == None:
-        print("Specify a task to demo")
+    task_name = args.task
+    assert task_name is not None, "task not specified"
+    assert task_name in task2env.keys(), f"task must be one of {task2env.keys()}"
 
-    task = tasks[args.task]
-    task()
-    
-
+    run_demo(task_name)
+  
 if __name__ == "__main__":
 
-    tasks = {
-        "whiteboard" : whiteboard_demo,
-        "tablesetting" : table_setting_demo,
-        "tofu" : tofu_demo,
-    }
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str)
     args = parser.parse_args()

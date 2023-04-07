@@ -66,7 +66,8 @@ class PrimitiveSkill:
         self.controller_config = controller_config
 
         # robot home position, waypoint height, etc.
-        self.reset_eef_pos = [0.45775618, 0.03207872, 0.35534091]
+        self.from_top_reset_eef_pos = [0.45775618, 0.03207872, 0.35534091]
+        self.from_side_reset_eef_pos = [0.45775618, 0.25018698, 0.26756592]
         self.from_top_quat = [0.9998506, 0.00906314, 0.01459545, 0.00192735] # quat when eef is pointing straight down 
         # self.from_side_quat = [-0.70351493, -0.01353285, -0.71054333, 0.00344373] # quat when eef is pointing straight forward
         self.from_side_quat = [0.508257, 0.49478495, -0.49082687, 0.5059166] # quat when eef is pointing to right of robot 
@@ -131,6 +132,11 @@ class PrimitiveSkill:
                 "num_params" : 1,
                 "skill" : self._gripper_action,
                 "default_idx" : 8,
+            },
+            "reset_joints" : {
+                "num_params" : 0,
+                "skill" : self._reset_joints,
+                "default_idx" : 9,
             },
         }
 
@@ -280,7 +286,7 @@ class PrimitiveSkill:
         self._move_to(params=params, finetune=False)
 
         # rehome
-        self._rehome(gripper_action=1, gripper_quat=self.from_side_quat)
+        self._rehome(gripper_action=1, gripper_quat=self.from_side_quat, reset_eef_pos=self.from_side_reset_eef_pos)
 
     def _place_from_top(self, params):
         """
@@ -424,7 +430,7 @@ class PrimitiveSkill:
         Wipes a surface by starting at specified position, moving on the xy plane with specified dx, dy, returns to start position, then rehomes
         
         Args:
-            params (7-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
+            params (6-tuple of floats) : [start_pos, dx, dy, yaw_angle[deg]]
         """
         start_pos = params[:3]
         dx = params[3]
@@ -458,6 +464,9 @@ class PrimitiveSkill:
         params = np.concatenate([waypoint_above, goal_quat, [gripper_action]])
         self._move_to(params=params, finetune=False)
 
+        # rehome
+        self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
+
     def _gripper_action(self, params):
         """
         Closes or opens gripper
@@ -474,8 +483,14 @@ class PrimitiveSkill:
                 action=action,
                 controller_cfg=self.controller_config,
             )
-        
-    def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None):
+
+    def _reset_joints(self, params=[]):
+        """
+        Resets joints to home position
+        """
+        reset_joints_to(self.robot_interface, self.reset_joint_positions)   
+    
+    def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None, reset_eef_pos=None):
         """
         Returns to home position with gripper pointing down. Finetuning step is turned off as default
 
@@ -483,8 +498,9 @@ class PrimitiveSkill:
             gripper_action (int) : -1 for open, 1 for closed
             gripper_direction (str) : "down" for pointing down, "front" for pointing forward
         """
-        
-        params = np.concatenate([self.reset_eef_pos, gripper_quat, [gripper_action]])
+        if reset_eef_pos is None:
+            reset_eef_pos = self.from_top_reset_eef_pos
+        params = np.concatenate([reset_eef_pos, gripper_quat, [gripper_action]])
         
         if deg_step_size is not None:
             self._move_to(params=params, step_size=0.015, finetune=finetune, deg_step_size=deg_step_size)
@@ -492,13 +508,7 @@ class PrimitiveSkill:
             self._move_to(params=params, step_size=0.015, finetune=finetune)
             
         final_quat, final_pos = self.robot_interface.last_eef_quat_and_pos
-        print("rehome pos error", self.reset_eef_pos - final_pos.flatten())
-
-    def _reset(self):
-        """
-        Resets joints to home position
-        """
-        reset_joints_to(self.robot_interface, self.reset_joint_positions)
+        print("rehome pos error", reset_eef_pos - final_pos.flatten())
 
     def _pause(self, gripper_action, sec):
         """

@@ -42,7 +42,7 @@ class RealRobotEnv(gym.Env):
         ignore_done=False,
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
         normalized_params=True,
-        reset_joint_pos = [0.08308526, -0.41477541, -0.01531586, -2.38322237, -0.01709504, 1.95553848, 0.87790016]
+        reset_joint_pos=None,
     ): 
 
         super().__init__()
@@ -78,6 +78,8 @@ class RealRobotEnv(gym.Env):
         self.thresholds = detector_config["thresholds"]
 
         # setup skills
+        if reset_joint_pos is None:
+            reset_joint_pos = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
         self.skill = PrimitiveSkill(
             controller_type=self.controller_type,
             controller_config=self.controller_config,

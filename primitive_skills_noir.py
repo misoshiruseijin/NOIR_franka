@@ -188,7 +188,7 @@ class PrimitiveSkill:
         tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=step_size, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
 
         for i in range(len(tran_inter)):
-            # TODO - check if human wants to interrupt. if yes, stop execution and rehome. Make sure the other skills stop executing as well
+            # TODO - check if human wants to interrupt. if yes, stop execution and rehome. If gripper is closed, keep it closed. Make sure the other skills stop executing as well.
             trans = tran_inter[i]
             ori = U.mat2quat(ori_inter[i])
 
@@ -490,6 +490,61 @@ class PrimitiveSkill:
         """
         reset_joints_to(self.robot_interface, self.reset_joint_positions)   
     
+    def _draw_x(self, params):
+        """
+        Draws X centered at specified 3d position
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # NOTE - z = 0.11 works for marker
+        line_len = 0.1
+        center_pos = params[:3] # center position in xyz
+        l1_start = center_pos + np.array([-0.5*line_len*math.sin(math.pi/4), -0.5*line_len*math.cos(math.pi/4), 0])
+        l1_wp1 = [l1_start[0], l1_start[1], self.waypoint_height]
+        l1_end = center_pos + np.array([0.65*line_len*math.sin(math.pi/4), 0.65*line_len*math.cos(math.pi/4), 0])
+        l1_wp2 = [l1_end[0], l1_end[1], self.waypoint_height]
+        l2_start = center_pos + np.array([-0.5*line_len*math.sin(math.pi/4), 0.5*line_len*math.cos(math.pi/4), 0])
+        l2_wp1 = [l2_start[0], l2_start[1], self.waypoint_height]
+        l2_end = center_pos + np.array([0.65*line_len*math.sin(math.pi/4), -0.65*line_len*math.cos(math.pi/4), 0])
+        l2_wp2 = [l2_end[0], l2_end[1], self.waypoint_height]
+        goal_quat = self.from_top_quat
+
+        # move to above line 1 start position
+        params = np.concatenate([l1_wp1, goal_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move to line 1 start pos
+        params = np.concatenate([l1_start, goal_quat, [1]])
+        self._move_to(params=params)
+
+        # draw line 1
+        params = np.concatenate([l1_end, goal_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move up to waypoint
+        params = np.concatenate([l1_wp2, goal_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move to above line 2 start pos
+        params = np.concatenate([l2_start, goal_quat, [1]])
+        self._move_to(params=params)
+
+        # move to line 2 start pos
+        params = np.concatenate([l2_start, goal_quat, [1]])
+        self._move_to(params=params)
+
+        # draw line 2
+        params = np.concatenate([l2_end, goal_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move up to waypoint
+        params = np.concatenate([l2_wp2, goal_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # rehome
+        self._rehome(gripper_action=1, gripper_quat=self.from_top_quat)
+
     def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None, reset_eef_pos=None):
         """
         Returns to home position with gripper pointing down. Finetuning step is turned off as default

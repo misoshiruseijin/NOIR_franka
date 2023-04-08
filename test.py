@@ -29,69 +29,43 @@ reset_joint_positions = [
     0.8480939705504309,
 ]
 
-# # these can be defined in each environment
-# obj_names = ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"]
 
-# # get dict from json
+# env = TablesettingEnv(
+#     normalized_params=False
+# )
+# obs = env.reset()
+# cup_pos = obs["shiny silver cup"]
+# pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
+# pick_pos = [0.54657, 0.01063, 0.15]
+# skill_selection_vec = np.zeros(env.num_skills)
 
-# # ask for user input for object
+# skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1
 
-# # get relevant skills from dict
-# # get skill name -> id
-
-# # generate parameter range
-# # present it to human
-# # parameter input
-
-# # execute skill
+# obs, reward, done, info = env.step(action=np.concatenate([skill_selection_vec, pick_pos]))
+# pdb.set_trace()
 
 
-# # defined in parent env and passed to detector
-# idx2skill = {
-#     0 : "pick_from_top",
-#     1 : "place_from_top",
-# }
 
-# # ask for object input
-# obj = ""
-# while not obj in obj_names:
-#     obj = input(f"select object from: {obj_names}\n")
 
-# # get relevant skill names
-# relevant_skills = [idx2skill[idx] for idx in obj2skillid[obj]]
-# skill = ""
-# while not skill in idx2skill.values():
-#     skill = input(f"select skill from {relevant_skills}\n")
-
-env = TablesettingEnv(
-    normalized_params=False
+controller_type = "OSC_POSE"
+robot_interface = FrankaInterface(
+        general_cfg_file="config/charmander.yml",
+        control_freq=20,
 )
-obs = env.reset()
-cup_pos = obs["shiny silver cup"]
-pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
-pick_pos = [0.54657, 0.01063, 0.15]
-skill_selection_vec = np.zeros(env.num_skills)
 
-skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1
+reset_joints_to(robot_interface, reset_joint_positions)
+quat, pos = robot_interface.last_eef_quat_and_pos
 
-obs, reward, done, info = env.step(action=np.concatenate([skill_selection_vec, pick_pos]))
+print("initial pos, quat", pos, quat)
+skills = PrimitiveSkill(
+    controller_type=controller_type,
+    controller_config=get_default_controller_config(controller_type),
+    robot_interface=robot_interface,
+)
+
+skills._pick_from_top([0.5, 0.0, 0.25])
 pdb.set_trace()
-
-# controller_type = "OSC_POSE"
-# robot_interface = FrankaInterface(
-#         general_cfg_file="config/charmander.yml",
-#         control_freq=20,
-# )
-
-# reset_joints_to(robot_interface, reset_joint_positions)
-# quat, pos = robot_interface.last_eef_quat_and_pos
-
-# print("initial pos, quat", pos, quat)
-# skills = PrimitiveSkill(
-#     controller_type=controller_type,
-#     controller_config=get_default_controller_config(controller_type),
-#     robot_interface=robot_interface,
-# )
+skills._draw_x([0.5, 0.0, 0.11])
 
 # pos = [0.43794176, -0.04834167, 0.3170166]
 # pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer

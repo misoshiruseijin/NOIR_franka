@@ -9,15 +9,6 @@ import cv2
 from getkey import getkey, keys
 from pynput import keyboard
 
-detector_params = cv2.SimpleBlobDetector_Params()
-detector_params.filterByArea = True
-detector_params.filterByColor = False
-detector_params.filterByCircularity = False
-detector_params.filterByConvexity = False
-detector_params.filterByInertia = False
-detector_params.minArea = 150.0
-detector_params.maxArea = 15000.0
-
 class WhiteboardEnv(RealRobotEnv):
     """Custom Environment that follows gym interface."""
 

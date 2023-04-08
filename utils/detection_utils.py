@@ -7,7 +7,7 @@ from deoxys.camera_redis_interface import CameraRedisSubInterface
 from utils.camera_utils import get_camera_image, get_camera_intrinsic_matrix, get_camera_extrinsic_matrix, pose_inv
 from transformers import OwlViTProcessor, OwlViTForObjectDetection
 
-
+# TODO - This class should be used in EEG ws side. Currently uses OWL-ViT as detector
 class DetectionUtils:
 
     def __init__(
@@ -17,8 +17,6 @@ class DetectionUtils:
         self.processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
         self.model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
 
-
-    # TODO - replace this with OWL-VIT
     def get_obj_pixel_coord(self, camera_interface, camera_id, texts, thresholds, save_img=True, n_instances=1):
         """
         Get center 2d coordinate of detected blob in image frame

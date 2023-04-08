@@ -63,9 +63,12 @@ skills = PrimitiveSkill(
     robot_interface=robot_interface,
 )
 
-skills._pick_from_top([0.5, 0.0, 0.25])
-pdb.set_trace()
-skills._draw_x([0.5, 0.0, 0.11])
+# #### Test draw ####
+# skills._pick_from_top([0.5, 0.0, 0.25])
+# skills._draw_x([0.5, 0.0, 0.11])
+
+#### Test screw ####
+skills._screw([0.5, 0.0, 0.2, 180])
 
 # pos = [0.43794176, -0.04834167, 0.3170166]
 # pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer

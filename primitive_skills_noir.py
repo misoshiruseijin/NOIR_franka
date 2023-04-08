@@ -138,6 +138,16 @@ class PrimitiveSkill:
                 "skill" : self._reset_joints,
                 "default_idx" : 9,
             },
+            "draw_x" : {
+                "num_params" : 3,
+                "skill" : self._draw_x,
+                "default_idx" : 10,
+            },
+            "screw" : {
+                "num_params" : 4,
+                "skill" : self._screw,
+                "default_idx" : 11,
+            },
         }
 
         if idx2skill is None:
@@ -544,6 +554,49 @@ class PrimitiveSkill:
 
         # rehome
         self._rehome(gripper_action=1, gripper_quat=self.from_top_quat)
+
+    def _screw(self, params):
+        """
+        Grab a cap at specified position and screw it
+        
+        Args:
+            params (4-tuple of floats) : [grasp_pos, screw angle[deg]]
+        """
+        # define waypoints
+        grasp_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        angle = params[3]
+
+        # get goal quat
+        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(angle)]) # update yaw component
+        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+
+        # move to above grasp position
+        params = np.concatenate([waypoint, self.from_top_quat, [-1]])
+        self._move_to(params=params)
+
+        # move down to grasp position
+        params = np.concatenate([grasp_pos, self.from_top_quat, [-1]])
+        self._move_to(params=params)
+        
+        # close gripper
+        self._gripper_action(params=[1])
+
+        # screw
+        params = np.concatenate([grasp_pos, goal_quat, [1]])
+        self._move_to(params=params)
+
+        # release
+        self._gripper_action(params=[-1])
+
+        # move up to waypoint
+        params = np.concatenate([waypoint, self.from_top_quat, [-1]])
+        self._move_to(params=params)
+
+        # rehome
+        self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
+
 
     def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None, reset_eef_pos=None):
         """

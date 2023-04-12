@@ -9,15 +9,6 @@ import cv2
 from getkey import getkey, keys
 from pynput import keyboard
 
-detector_params = cv2.SimpleBlobDetector_Params()
-detector_params.filterByArea = True
-detector_params.filterByColor = False
-detector_params.filterByCircularity = False
-detector_params.filterByConvexity = False
-detector_params.filterByInertia = False
-detector_params.minArea = 150.0
-detector_params.maxArea = 15000.0
-
 class TablesettingEnv(RealRobotEnv):
     """Custom Environment that follows gym interface."""
 
@@ -60,7 +51,6 @@ class TablesettingEnv(RealRobotEnv):
             },
             detector_config={
                 "texts" : ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"], # text description of objects of interest
-                # "thresholds" : [0.05, 0.05, 0.05, 0.07], # works with cam0 but not with cam1
                 "thresholds" : [0.02, 0.02, 0.02, 0.02],
             },
             gripper_thresh=0.04,

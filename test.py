@@ -64,6 +64,22 @@ skills = PrimitiveSkill(
     robot_interface=robot_interface,
 )
 
+### Test everything in series ###
+pos = [0.5, 0.0, 0.2]
+# skills._pick_from_top(pos)
+# skills._pick_from_side(pos)
+# skills._place_from_top(pos)
+# skills._place_from_side(pos)
+# skills._push_z(np.concatenate([pos, [-0.1, 90]]))
+# skills._push_xy(np.concatenate([pos, [0.05, -0.1, 45]]))
+# skills._wipe_xy(np.concatenate([pos, [0.05, -0.1, 0.0]]))
+# skills._draw_x(pos)
+# skills._screw(np.concatenate([pos, [45]]))
+# skills._pour_from_top(pos)
+# skills._pour_from_side(pos)
+skills._reset_joints()
+# skills._rehome(gripper_action=-1, gripper_quat=skills.from_top_quat)
+
 
 
 # #### Test draw ####
@@ -74,39 +90,6 @@ skills = PrimitiveSkill(
 # skills._screw([0.5, 0.0, 0.2, 180])
 
 #### Test pour ####
-skills._pick_from_top(params=[0.5, 0.0, 0.2])
-skills._pour_from_top(params=[0.5, 0.0, 0.2])
+# skills._pick_from_top(params=[0.5, 0.0, 0.2])
+# skills._pour_from_top(params=[0.5, 0.0, 0.2])
 
-# pos = [0.43794176, -0.04834167, 0.3170166]
-# pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer
-# pos = [0.44395209, -0.10580851, 0.05464783] # teapot on table
-
-# pick_pos = [0.54657, 0.01063, 0.15]
-# skills._pick_from_top(pick_pos)
-# skills._move_to(params=np.concatenate([pos, quat, [-1]]))
-# final_quat, final_pos = robot_interface.last_eef_quat_and_pos
-# error = pos - final_pos.flatten()
-# print("goal pos", pos)
-# print("final pos", final_pos)
-# print("error", error)
-
-# skills._pick_from_side(params=pos)
-# skills._place_from_side(params=pos)
-# skills._push_z(params=np.concatenate([pos, [-0.1, 45.0]]))
-
-# skills._pick(params=np.concatenate([pos, left_quat]))
-# skills._rehome(gripper_action=1, gripper_quat=left_quat)
-
-# skills._rehome(gripper_action=-1, gripper_direction="down")
-
-# goal_pos = [0.5764149, 0.1, 0.16015941]
-# goal_quat = [0.9998497, 0.00907074, 0.01465143, 0.00190753]
-
-# skills._move_to(
-#     params = np.concatenate([goal_pos, goal_quat, [-1]])
-# )
-
-# final_quat, final_pos = robot_interface.last_eef_quat_and_pos
-# final_pos = final_pos.flatten()
-# print("final eef pos and quat", final_pos, final_quat)
-# print("position error", final_pos - goal_pos)

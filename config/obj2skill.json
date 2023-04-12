@@ -1,10 +1,11 @@
 {
-    "bowl" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "cup" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "spoon" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "knife" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "eraser" : ["pick_from_top", "pick_from_side", "push_xy"],
-    "none_tablesetting" : ["place_from_top", "place_from_side"],
-    "none_tofu" : ["push_z", "place_from_top"],
-    "none_whiteboard" : ["wipe_xy", "place_from_top"]
+    "red bowl" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "light blue bowl" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "shiny silver cup" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "red and blue spoon" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "red spatula" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "dark blue eraser" : ["pick_from_top", "pick_from_side", "push_xy"],
+    "none_tablesetting" : ["place_from_top", "place_from_side", "reset_joints"],
+    "none_tofu" : ["place_from_top", "push_xy", "push_z", "reset_joints"],
+    "none_whiteboard" : ["place_from_top", "place_from_side", "wipe_xy", "reset_joints"]
 }

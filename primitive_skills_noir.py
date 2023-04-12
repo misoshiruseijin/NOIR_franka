@@ -174,6 +174,9 @@ class PrimitiveSkill:
         self.num_skills = len(self.idx2skill)
         self.max_num_params = max([self.skills[skill_name]["num_params"] for skill_name in self.idx2skill.values()])
 
+        # interruption flag
+        self.interrupt = False # this is set to true when the human sends a signal to interrupt a skill during execution
+
     def execute_skill(self, action):
         """
         Executes skill
@@ -196,8 +199,15 @@ class PrimitiveSkill:
             sequence (list of lists) : [ [skill name 1, param 1], [skill name 2, param 2], ...]
         """
         for item in sequence:
-            # TODO - check for interruption signal and stop execution
-
+            # TODO - test this
+            
+            # if human interrupts, stop execution and rehome
+            if self.interrupt:
+                gripper_action = self._get_gripper_state() # get the current gripper state
+                self._rehome(gripper_action=gripper_action, gripper_quat=self.from_top_quat)
+                self.interrupt = False 
+                break
+                
             skill_name, params = item
             skill = self.helper_skills[skill_name]["skill"]
             skill(params=params)
@@ -496,7 +506,8 @@ class PrimitiveSkill:
         reset_joints_to(self.robot_interface, self.reset_joint_positions)   
 
     """
-    Skill helper functions
+    Skill helper functions:
+        _move_to is interruptable while others are not
     """
     def _move_to(self, params, step_size=0.015, deg_step_size=5):
         """
@@ -523,13 +534,16 @@ class PrimitiveSkill:
         tran_inter, ori_inter = self.interpolate_poses(goal_pos, goal_orn, step_size=step_size, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
 
         for i in range(len(tran_inter)):
-            # TODO - check if human wants to interrupt. if yes, stop execution and rehome. If gripper is closed, keep it closed. Make sure the other skills stop executing as well.
+            # TODO - test if this woks 
+            rcvd_interrupt = False # TODO - this is a placeholder. replace with actual signal from server
+            if rcvd_interrupt:
+                self.interrupt = True
+                break
+
             trans = tran_inter[i]
             ori = U.mat2quat(ori_inter[i])
 
-            for _ in range(3): # how many times does one waypoint execute. 
-                               # The smaller the faster but less accurate. 
-                               # The larger the slower and more accurate but you will feel pausing between waypoints
+            for _ in range(3): # 3 = number of times each waypoint is executed. smaller = faster but less accurate, larger = slower but more accurate
                 new_action = self.poses_to_action(trans, ori)
                 new_action = np.concatenate((new_action, [gripper_action]))
                 self.robot_interface.control(
@@ -545,15 +559,13 @@ class PrimitiveSkill:
                 break
 
         # fine tune
-        if finetune:
+        if finetune and not self.interrupt:
             tran_inter, ori_inter = self.interpolate_poses(action[:3], action[3:7], step_size=0.005, step_size_deg=deg_step_size) # num_step should between [10, 30], the larger the slower
             for i in range(len(tran_inter)):
                 trans = tran_inter[i]
                 ori = U.mat2quat(ori_inter[i])
 
-                for _ in range(3): # how many times does one waypoint execute. 
-                                # The smaller the faster but less accurate. 
-                                # The larger the slower and more accurate but you will feel pausing between waypoints
+                for _ in range(3): # 3 = number of times each waypoint is executed. smaller = faster but less accurate, larger = slower but more accurate
                     new_action = self.poses_to_action(trans, ori)
                     new_action = np.concatenate((new_action, [gripper_action]))
                     self.robot_interface.control(
@@ -619,6 +631,16 @@ class PrimitiveSkill:
                 action=action,
                 controller_cfg=self.controller_config,
             )
+
+    def _get_gripper_state(self, thresh=0.04):
+        """
+        Checks whether gripper is closed (used during interrupt)
+        Args:
+            thresh (float) : gripper is considered closed if gripper opening is less than this value
+        """
+        last_gripper_state = self.robot_interface._gripper_state_buffer[-1]
+        return 1 if last_gripper_state < thresh else -1
+
 
     """
     Param unnormalization and Motion Interpolation functions

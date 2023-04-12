@@ -13,6 +13,7 @@ from deoxys.experimental.motion_utils import reset_joints_to
 
 from camera_utils import project_points_from_base_to_camera, get_camera_image
 from deoxys.camera_redis_interface import CameraRedisSubInterface
+import utils.transformation_utils as T
 
 from PIL import Image, ImageDraw
 import cv2
@@ -63,12 +64,18 @@ skills = PrimitiveSkill(
     robot_interface=robot_interface,
 )
 
+
+
 # #### Test draw ####
 # skills._pick_from_top([0.5, 0.0, 0.25])
 # skills._draw_x([0.5, 0.0, 0.11])
 
 #### Test screw ####
-skills._screw([0.5, 0.0, 0.2, 180])
+# skills._screw([0.5, 0.0, 0.2, 180])
+
+#### Test pour ####
+skills._pick_from_top(params=[0.5, 0.0, 0.2])
+skills._pour_from_top(params=[0.5, 0.0, 0.2])
 
 # pos = [0.43794176, -0.04834167, 0.3170166]
 # pos = [0.40395209, -0.15580851, 0.10464783] # teapot on drawer

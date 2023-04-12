@@ -148,6 +148,16 @@ class PrimitiveSkill:
                 "skill" : self._screw,
                 "default_idx" : 11,
             },
+            "pour_from_side" : {
+                "num_params" : 3,
+                "skill" : self._pour_from_side,
+                "default_idx" : 12,
+            },
+            "pour_from_top" : {
+                "num_params" : 3,
+                "skill" : self._pour_from_top,
+                "default_idx" : 13,
+            },
         }
 
         if idx2skill is None:
@@ -373,9 +383,11 @@ class PrimitiveSkill:
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
 
         # convert euler to quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        # from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        from_top_euler = U.quat2euler(self.from_top_quat)
         goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        # goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        goal_quat = U.euler2quat(goal_euler)
         print("goal quat", goal_quat)
         print("from top quat", self.from_top_quat)
 
@@ -414,9 +426,11 @@ class PrimitiveSkill:
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
 
         # convert euler to quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        # from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        from_top_euler = U.quat2euler(self.from_top_quat)
         goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        # goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        goal_quat = U.euler2quat(goal_euler)
         print("goal quat", goal_quat)
         print("from top quat", self.from_top_quat)
 
@@ -452,11 +466,13 @@ class PrimitiveSkill:
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
 
         # convert euler to quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        # from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        from_top_euler = U.quat2euler(self.from_top_quat)
         goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
-        print("goal quat", goal_quat)
-        print("from top quat", self.from_top_quat)
+        # goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        goal_quat = U.euler2quat(goal_euler)
+        # print("goal quat", goal_quat)
+        # print("from top quat", self.from_top_quat)
 
         # move to start pos
         params = np.concatenate([start_pos, goal_quat, [gripper_action]])
@@ -568,9 +584,11 @@ class PrimitiveSkill:
         angle = params[3]
 
         # get goal quat
-        from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        # from_top_euler = U.mat2euler(U.quat2mat(self.from_top_quat)) # convert to euler
+        from_top_euler = U.quat2euler(self.from_top_quat)
         goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(angle)]) # update yaw component
-        goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        # goal_quat = U.mat2quat(U.euler2mat(goal_euler)) # convert new orn back to quat
+        goal_quat = U.euler2quat(goal_euler)
 
         # move to above grasp position
         params = np.concatenate([waypoint, self.from_top_quat, [-1]])
@@ -597,6 +615,81 @@ class PrimitiveSkill:
         # rehome
         self._rehome(gripper_action=-1, gripper_quat=self.from_top_quat)
 
+    def _pour_from_side(self, params):
+        """
+        Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.
+        Assumes robot is holding a relevant object from the side
+
+        Args:
+            params (3-tuple of floats) : [eef_pos] 
+        """
+        # define waypoints
+        pour_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+        # goal quat
+        goal_quat = [0.6963252, 0.7174281, 0.01201747, 0.01685036]
+
+        # move to above pour position
+        params = np.concatenate([waypoint, self.from_side_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move down to goal position
+        params = np.concatenate([pour_pos, self.from_side_quat, [1]])
+        self._move_to(params=params)
+
+        # pour
+        params = np.concatenate([pour_pos, goal_quat, [1]])
+        self._move_to(params=params)
+
+        # move back to original orientation
+        params = np.concatenate([pour_pos, self.from_side_quat, [1]])
+        self._move_to(params=params)
+        
+        # move up
+        params = np.concatenate([waypoint, self.from_side_quat, [1]])
+        self._move_to(params=params)
+
+        # rehome
+        self._rehome(gripper_action=1, gripper_quat=self.from_side_quat)
+
+    def _pour_from_top(self, params):
+        """
+        Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.
+        Assumes robot is holding a relevant object from the top
+
+        Args:
+            params (3-tuple of floats) : [eef_pos] 
+        """
+        # define waypoints
+        pour_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+        # goal quat
+        goal_quat = [0.8490147, 0.01116254, -0.5269386, 0.0372193]
+
+        # move to above pour position
+        params = np.concatenate([waypoint, self.from_top_quat, [1]])
+        self._move_to(params=params, finetune=False)
+
+        # move down to goal position
+        params = np.concatenate([pour_pos, self.from_top_quat, [1]])
+        self._move_to(params=params)
+
+        # pour
+        params = np.concatenate([pour_pos, goal_quat, [1]])
+        self._move_to(params=params)
+
+        # move back to original orientation
+        params = np.concatenate([pour_pos, self.from_top_quat, [1]])
+        self._move_to(params=params)
+        
+        # move up
+        params = np.concatenate([waypoint, self.from_top_quat, [1]])
+        self._move_to(params=params)
+
+        # rehome
+        self._rehome(gripper_action=1, gripper_quat=self.from_top_quat)
 
     def _rehome(self, gripper_action, gripper_quat, finetune=True, deg_step_size=None, reset_eef_pos=None):
         """

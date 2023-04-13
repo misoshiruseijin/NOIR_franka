@@ -192,7 +192,7 @@ class PrimitiveSkill:
 
     def execute_skill(self, action):
         """
-        Executes skill
+        Executes skill. This is the main function that should be called from outside this class to execute a skill
         Args:
             action : skill selection vector concatenated with params vector
         """
@@ -233,7 +233,7 @@ class PrimitiveSkill:
             skill(params=params)
 
     """
-    Skills
+    Executable Skills
     """
     def _pick_from_top(self, params):
         """
@@ -551,7 +551,6 @@ class PrimitiveSkill:
         ]
 
         self._execute_sequence(sequence)
-        # self._rehome(gripper_action=1, gripper_quat=self.from_side_quat)
 
     def _reset_joints(self, params=[]):
         """
@@ -705,8 +704,6 @@ class PrimitiveSkill:
                 self.interrupt = True
                 self.allow_interrupt = False
                 print("rcvd interrupt", self.interrupt)
-        # else:
-        #     print("Interrupt is not allowed")
 
     """
     Param unnormalization and Motion Interpolation functions

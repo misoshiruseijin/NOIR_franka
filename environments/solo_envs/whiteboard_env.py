@@ -1,15 +1,8 @@
-import numpy as np
-
-import sys
-sys.path.insert(1, "/home/eeg/MAPLE-EF")
 from environments.realrobot_env_noir import RealRobotEnv
 import time
 import pdb
-import cv2
-from getkey import getkey, keys
-from pynput import keyboard
 
-class TablesettingEnv(RealRobotEnv):
+class WhiteboardEnv(RealRobotEnv):
     """Custom Environment that follows gym interface."""
 
     def __init__(
@@ -25,10 +18,7 @@ class TablesettingEnv(RealRobotEnv):
         if self.keys is None:
             self.keys = [
                 "eef_pos", "gripper_state",
-                "light blue bowl", 
-                "red bowl",
-                "red and blue spoon",
-                "shiny silver cup",
+                "dark blue eraser", 
             ]
 
         self.current_observations = {}
@@ -50,8 +40,8 @@ class TablesettingEnv(RealRobotEnv):
                 # TODO - include objID2skillID dict here
             },
             detector_config={
-                "texts" : ["shiny silver cup", "light blue bowl", "red bowl", "red and blue spoon"], # text description of objects of interest
-                "thresholds" : [0.02, 0.02, 0.02, 0.02],
+                "texts" : ["dark blue eraser"], # text description of objects of interest
+                "thresholds" : [0.003],
             },
             gripper_thresh=0.04,
             reset_joint_pos=reset_joint_pos, 
@@ -142,40 +132,6 @@ class TablesettingEnv(RealRobotEnv):
         """
         self._update_task_status()
         self._update_current_observations(wait=wait)
-
-    def human_reward(self, action): # TODO - just here for reference
-        print("=====human reward call=======")
-        global human_feedback_reward
-        global go_signal
-        human_feedback_reward = 0.0
-        go_signal = False
-        if self.visualize_params:
-            self.human_feedback_request(action)
-
-        human_feedback_value = ''
-
-        while human_feedback_value not in ['g', 'b', 'e', 's']:
-            print("Input your feedback:")
-            human_feedback_value = getkey()
-            # print("key we get {}".format(human_feedback_value))
-
-            if human_feedback_value == "g":
-                human_feedback_reward = 1.0
-                go_signal = False
-            elif human_feedback_value == "b":
-                human_feedback_reward = -1.0
-                go_signal = False
-            elif human_feedback_value == "e":
-                human_feedback_reward = 0.0
-                go_signal = True
-            elif human_feedback_value == "s":
-                human_feedback_reward = 19.0
-                go_signal = False
-            else:
-                human_feedback_reward = 0.0
-                go_signal = False
-
-        return human_feedback_reward, go_signal        
 
     def step(self, action):
 

@@ -1,3 +1,7 @@
+"""
+Self-Contained version of environment. Detection, object selection, skill selection, parameter selection, interrupt all happens on robot side alone.
+"""
+
 import gym
 import numpy as np
 from gym import spaces
@@ -17,12 +21,10 @@ from deoxys.experimental.motion_utils import reset_joints_to
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 from camera_utils import project_points_from_base_to_camera, get_camera_image
 from utils.detection_utils import DetectionUtils
-from getkey import getkey, keys
 
 import pdb
-from pynput import keyboard
 
-class RealRobotEnv(gym.Env):
+class RealRobotEnvSolo(gym.Env):
     """Custom Environment that follows gym interface."""
 
     def __init__(

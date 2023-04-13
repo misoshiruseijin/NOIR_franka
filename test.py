@@ -64,23 +64,47 @@ skills = PrimitiveSkill(
     robot_interface=robot_interface,
 )
 
+# pos = [0.5, -0.1, 0.1]
+# while True:
+#     skills._pick_from_top(pos)
+#     print("finished executing skill")
+#     pdb.set_trace()
+
 ### Test everything in series ###
-pos = [0.5, 0.0, 0.2]
-# skills._pick_from_top(pos)
-# skills._pick_from_side(pos)
-# skills._place_from_top(pos)
-# skills._place_from_side(pos)
-# skills._push_z(np.concatenate([pos, [-0.1, 90]]))
-# skills._push_xy(np.concatenate([pos, [0.05, -0.1, 45]]))
-# skills._wipe_xy(np.concatenate([pos, [0.05, -0.1, 0.0]]))
-# skills._draw_x(pos)
-# skills._screw(np.concatenate([pos, [45]]))
-# skills._pour_from_top(pos)
-# skills._pour_from_side(pos)
+pos = [0.5, 0.0, 0.1]
 skills._reset_joints()
-# skills._rehome(gripper_action=-1, gripper_quat=skills.from_top_quat)
-
-
+skills._pick_from_top(pos)
+pdb.set_trace()
+skills._place_from_top(pos)
+pdb.set_trace()
+skills._reset_joints()
+pdb.set_trace()
+skills._pick_from_side(pos)
+pdb.set_trace()
+skills._place_from_side(pos) 
+pdb.set_trace()
+skills._reset_joints()
+pdb.set_trace()
+skills._push_z(np.concatenate([pos, [-0.1, 90]]))
+pdb.set_trace()
+skills._push_xy(np.concatenate([pos, [0.05, -0.1, 45]]))
+pdb.set_trace()
+skills._reset_joints()
+pdb.set_trace()
+skills._wipe_xy(np.concatenate([pos, [0.05, -0.1, 0.0]]))
+pdb.set_trace()
+skills._draw_x(pos)
+pdb.set_trace()
+skills._reset_joints()
+pdb.set_trace()
+skills._screw(np.concatenate([pos, [45]]))
+pdb.set_trace()
+skills._reset_joints()
+pdb.set_trace()
+skills._pour_from_top(pos)
+pdb.set_trace()
+skills._pour_from_side(pos)
+pdb.set_trace()
 
 # #### Test draw ####
 # skills._pick_from_top([0.5, 0.0, 0.25])

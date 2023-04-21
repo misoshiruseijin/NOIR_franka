@@ -1,13 +1,13 @@
 import numpy as np
 
 import sys
-from environments.realrobot_env_noir import RealRobotEnv
+from environments.solo_envs.realrobot_env_solo import RealRobotEnvSolo
 import time
 import pdb
 from getkey import getkey, keys
 from pynput import keyboard
 
-class TablesettingEnv(RealRobotEnv):
+class TablesettingEnv(RealRobotEnvSolo):
     """Custom Environment that follows gym interface."""
 
     def __init__(

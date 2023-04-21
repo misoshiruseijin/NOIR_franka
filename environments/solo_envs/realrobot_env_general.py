@@ -9,6 +9,7 @@ import cv2
 import time
 from PIL import Image, ImageDraw, ImageFont
 from abc import abstractmethod
+import json
 
 import sys
 sys.path.append("..")
@@ -29,17 +30,14 @@ class RealRobotEnvSolo(gym.Env):
 
     def __init__(
         self,
+        env_name,
         controller_type,
         general_cfg_file="config/charmander.yml",
         control_freq=20,
-        workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
+        workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)}, # TODO
         skill_config={
             "waypoint_height" : 0.25,
             "idx2skill" : None,
-        },
-        detector_config={
-            "texts" : [],
-            "thresholds" : []
         },
         ignore_done=False,
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
@@ -49,6 +47,11 @@ class RealRobotEnvSolo(gym.Env):
 
         super().__init__()
         
+        with open('config/task_obj_skills.json') as json_file:
+            task_dict = json.load(json_file)
+            assert env_name in task_dict.keys(), f"Unrecognized environment name. Choose from {task_dict.keys()}"
+            self.obj2skills = task_dict[env_name]
+
         self.timestep = 0
         self.ignore_done = ignore_done
 
@@ -76,8 +79,8 @@ class RealRobotEnvSolo(gym.Env):
         
         # setup detection-related things
         self.detection_utils = DetectionUtils()
-        self.texts = detector_config["texts"]
-        self.thresholds = detector_config["thresholds"]
+        self.texts = list(self.obj2skills.keys())
+        self.texts.remove("none")
 
         # setup skills
         if reset_joint_pos is None:
@@ -88,35 +91,14 @@ class RealRobotEnvSolo(gym.Env):
             robot_interface=self.robot_interface,
             waypoint_height=skill_config["waypoint_height"],
             workspace_limits=self.workspace_limits,
-            # idx2skill=skill_config["idx2skill"],
             reset_joint_pos=reset_joint_pos,
         )
 
         self.num_skills = self.skill.num_skills
 
-        # Define action and observation spaces - TODO this needs to be changed
-        # if self.use_skills:
-        #     max_num_params = self.skill.max_num_params
-        #     print("max num params: ", max_num_params)
-        #     high = np.ones(self.num_skills + max_num_params)
-        #     low = -high
-        #     self.action_space = spaces.Box(low=low, high=high)
-        # else:
-        #     high = np.ones(5) if use_yaw else np.ones(4)
-        #     # high = np.ones(7)
-        #     low = -high
-        #     self.action_space = spaces.Box(low=low, high=high)
+        self.get_object_pos() # get object positions to make sure visualization is updated
 
-        self._add_robot_state_to_cur_obs()
-        self.current_infos = {}
-        obs_to_use = {key : self.current_observations[key] for key in self.keys}
-        flattened_obs = self._flatten_obs(obs_to_use)
-        self.obs_dim = flattened_obs.size
-        high = np.inf * np.ones(self.obs_dim)
-        low = -high
-        self.observation_space = spaces.Box(low=low, high=high)
-
-    def reward(self,):
+    def reward(self): # placeholder. not used
         """
         Reard function for task. Returns environment reward only.
         Environment reward is given when task is successfully complete:
@@ -127,9 +109,9 @@ class RealRobotEnvSolo(gym.Env):
             reward (float) : environment reward
         """
         
-        raise NotImplementedError
+        return 0
 
-    def step(self, action, execute=True): # TODO this should be changed to use skills only - we don't need low level control
+    def step(self, action, execute=True):
 
         """
         Commands robot to execute skill corresponding to input action
@@ -140,27 +122,29 @@ class RealRobotEnvSolo(gym.Env):
 
         self.skill.execute_skill(action)
 
-        reward, done, info = self._post_action(action)        
-        self._add_robot_state_to_cur_obs()
-        obs = {key : self.current_observations[key] for key in self.keys}
+        reward, done, info = self._post_action(action)
+        obs = self._get_current_robot_state()
+        obj_pos = self.get_object_pos()
+        obs.update(obj_pos)    
+
         return obs, reward, done, info
 
     def _post_action(self, action): # TODO reset only when task is complete or if human wants it to??
-            """
-            Do any housekeeping after taking an action.
-            Args:
-                action (np.array): Action to execute within the environment
-            Returns:
-                3-tuple:
-                    - (float) reward from the environment
-                    - (bool) whether the current episode is completed or not
-                    - (dict) empty dict to be filled with information by subclassed method
-            """
-            reward = self.reward()
+        """
+        Do any housekeeping after taking an action.
+        Args:
+            action (np.array): Action to execute within the environment
+        Returns:
+            3-tuple:
+                - (float) reward from the environment
+                - (bool) whether the current episode is completed or not
+                - (dict) empty dict to be filled with information by subclassed method
+        """
+        reward = self.reward()
 
-            # if self.done: # NOTE there is no check for num steps - this flag should be set in child class if needed
-            #     self.reset()
-            return reward, False, {}
+        # if self.done: # NOTE there is no check for num steps - this flag should be set in child class if needed
+        #     self.reset()
+        return reward, False, {}
 
     def _reset_internal(self):
         """
@@ -176,9 +160,9 @@ class RealRobotEnvSolo(gym.Env):
         self._reset_internal()
         reset_joints_to(self.robot_interface, self.skill.reset_joint_positions)
         time.sleep(0.5)
-        self._add_robot_state_to_cur_obs()
-        obs = {key : self.current_observations[key] for key in self.keys}
-        self.current_infos = {}
+        obs = self._get_current_robot_state()
+        obj_pos = self.get_object_pos()
+        obs.update(obj_pos)
         return obs
 
     def _get_current_robot_state(self):
@@ -206,51 +190,7 @@ class RealRobotEnvSolo(gym.Env):
         }
         return robot_state
 
-    # def _check_action_in_ws_bounds(self, action): # shouldn't need this if not using low level control
-    #     """
-    #     Checks if action will keep robot within workspace boundaries
-    #     """
-    #     sf = 3 # TODO - tune this: higher is more cautious
-    #     scale = self.controller_config["action_scale"]["translation"] # controller internally scales translation action inputs by this value
-    #     scaled_action = scale * action
-    #     eef_pos = self.current_observations["eef_pos"]
-        
-    #     cur_x_in_bounds = self.workspace_limits["x"][0] < eef_pos[0] < self.workspace_limits["x"][1]
-    #     cur_y_in_bounds = self.workspace_limits["y"][0] < eef_pos[1] < self.workspace_limits["y"][1]
-    #     cur_z_in_bounds = self.workspace_limits["z"][0] < eef_pos[2] < self.workspace_limits["z"][1]
-
-    #     # if already outside workspace, allow action if it brings it inside workspace
-    #     if not cur_x_in_bounds:
-    #         print("EEF already out of bounds in x")
-    #         x_good = (
-    #             eef_pos[0] < self.workspace_limits["x"][0] and action[0] > 0
-    #             or eef_pos[0] > self.workspace_limits["x"][1] and action[0] < 0
-    #         )
-    #     else:
-    #         x_good = self.workspace_limits["x"][0] < eef_pos[0] + sf * scaled_action[0] / self.control_freq < self.workspace_limits["x"][1]
-
-    #     if not cur_y_in_bounds:
-    #         print("EEF already out of bounds in y")
-    #         y_good = (
-    #             eef_pos[1] < self.workspace_limits["y"][0] and action[1] > 0
-    #             or eef_pos[1] > self.workspace_limits["y"][1] and action[1] < 0
-    #         )
-    #     else:
-    #         y_good = self.workspace_limits["y"][0] < eef_pos[1] + sf * scaled_action[1] / self.control_freq < self.workspace_limits["y"][1]
-
-    #     if not cur_z_in_bounds:
-    #         print("EEF already out of bounds in z")
-    #         z_good = (
-    #             eef_pos[2] < self.workspace_limits["z"][0] and action[2] > 0
-    #             or eef_pos[2] > self.workspace_limits["z"][1] and action[2] < 0
-    #         )
-    #     else:
-    #         z_good = self.workspace_limits["z"][0] < eef_pos[2] + sf * scaled_action[2] / self.control_freq < self.workspace_limits["z"][1]
-        
-    #     print("action is ok in x y z", x_good, y_good, z_good)
-    #     return x_good and y_good and z_good
-
-    def _update_param_visualization(self, action): # TODO - check the case where multiple positoins are given and fix colors
+    def _update_param_visualization(self, action): # TODO - check the case where multiple positoins are given and fix colors if we need it in eeg side
         """
         Given coordinates in 3d world, updates visualization of 3d points in camera image.
         First point is displayed in red and the second point is displayed in blue.
@@ -337,25 +277,9 @@ class RealRobotEnvSolo(gym.Env):
             cv2.imwrite(f'param_vis_images/camera{camera_id}_with_params.png', im[:, :, ::-1])
             cv2.imwrite(f'param_vis_images/camera{camera_id}_raw.png', im_raw[:, :, ::-1])
 
-    # def human_feedback_request(self, action): # don't need this?
-
-    #     """
-    #     Algorithm calls this function to ask for human feedback. A visualization of parameters is updated
-    #     Args:
-    #         pos_list : list of positions to display (at most 2 elements)
-    #         yaw : yaw angle
-    #     """
-    #     self._update_param_visualization(action)
-
-    # TODO - need new function that: presents objects -> human choose obj -> present relevant skills -> human chooses skill -> human chooses param -> execute
-
     def _add_robot_state_to_cur_obs(self):
         robot_state = self._get_current_robot_state()
         self.current_observations.update(robot_state)
-
-    @abstractmethod
-    def update(self):
-        raise NotImplementedError()    
 
     def get_object_pos(self, wait=True): # TODO - this needs to be updated with OWL-VIT
         """
@@ -368,9 +292,11 @@ class RealRobotEnvSolo(gym.Env):
             obj_positions (dict) : element is in the form { obj name as defined in self.texts : obj position (3d array) }
         """
 
-        obj_positions = self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=self.thresholds, wait=wait)
+        obj_positions = self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=None, wait=wait)
         return obj_positions    
     
+
+
 
 
     """

@@ -8,15 +8,20 @@ from deoxys.franka_interface import FrankaInterface
 from deoxys.experimental.motion_utils import reset_joints_to
 
 
-reset_joint_positions = [
-            0.09162008114028396,
-            -0.19826458111314524,
-            -0.01990020486871322,
-            -2.4732269941140346,
-            -0.01307073642274261,
-            2.30396583422025,
-            0.8480939705504309,
-        ]
+#### default reset position ######
+# reset_joint_positions = [
+#             0.09162008114028396,
+#             -0.19826458111314524,
+#             -0.01990020486871322,
+#             -2.4732269941140346,
+#             -0.01307073642274261,
+#             2.30396583422025,
+#             0.8480939705504309,
+#         ]
+
+#### NOIR Reset Position ####
+reset_joint_positions = [0.09180193, -0.31747033, -0.01917534, -2.3957181, -0.01349398, 2.126882, 0.84652007]
+
 robot_interface = FrankaInterface(
     general_cfg_file="config/charmander.yml"
 )

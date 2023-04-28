@@ -1,28 +1,42 @@
 from utils.detection_utils import DetectionUtils
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 from utils.camera_utils import get_camera_image, get_camera_intrinsic_matrix, get_camera_extrinsic_matrix, pose_inv
-from primitive_skills_noir import PrimitiveSkill
+# from primitive_skills_noir import PrimitiveSkill
+
+import time
+import pdb
 camera_interfaces = {
         0 : CameraRedisSubInterface(camera_id=0),
         1 : CameraRedisSubInterface(camera_id=1),
     }
 
 detection_utils = DetectionUtils()
+# texts = ["brown cow toy", "banana toy", "beize tea cup"]
+# for i in range(2):
+#     coords = detection_utils.get_obj_pixel_coord(
+#         camera_interface=camera_interfaces[i],
+#         camera_id=i,
+#         texts=texts,
+#         thresholds=[0.001] * len(texts),
+#         save_img=True,
+#         n_instances=1
+#     )
+#     print(f"Coords in camera {i}")
+#     print(coords)
 
-# def get_obj_pixel_coord(self, camera_interface, camera_id, texts, thresholds, save_img=True, n_instances=1):
-texts = ["brown cow toy", "banana toy", "beize tea cup"]
-for i in range(2):
+while True:
+    start_time = time.time()
+
     coords = detection_utils.get_obj_pixel_coord(
-        camera_interface=camera_interfaces[i],
-        camera_id=i,
-        texts=texts,
-        thresholds=[0.001] * len(texts),
-        save_img=True,
-        n_instances=1
+        camera_interface=camera_interfaces[0],
+        camera_id=0,
+        texts=["red bowl", "light blue bowl", "shiny silver cup", "green handle"],
+        thresholds=[0.001]*4,
+        save_img=False,
+        n_instances=1,
     )
-    print(f"Coords in camera {i}")
-    print(coords)
-
+    end_time = time.time()
+    print("time this iter", end_time-start_time)
 
 # from PIL import Image, ImageDraw, ImageFont
 # import torch

@@ -17,13 +17,14 @@ camera_interfaces = {
 detection_utils = DetectionUtils()
 
 
-def collect_affordance_data(texts, n_iter=1):
+def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
 
     """
     Collect (image, skill parameter) data for specified object
 
     Args:
-        text (str) : text for object of interest for OWL-ViT detector
+        texts (list of str) : text for object of interest for OWL-ViT detector
+        save_file_name (str) : name of file to save data in
         n_iter (int) : number of datapoints to detect
 
     Returns:
@@ -41,11 +42,14 @@ def collect_affordance_data(texts, n_iter=1):
             }
     """
 
+    save_dir = f"affordance_data/{save_dir_name}"
+    os.makedirs(save_dir, exist_ok=True)
+
     full_data = {}
 
     for i in range(n_iter):
         # wait for start signal input
-        input("Set the physical environment, then press enter")
+        # input("Set the physical environment, then press enter")
 
         # get image arrays
         image0 = get_camera_image(camera_interface=camera_interfaces[0])
@@ -84,16 +88,16 @@ def collect_affordance_data(texts, n_iter=1):
 
         # ask for parameter input
 
-        # record signal and parameter
+        # record coordinates and parameter
         obj_name = texts[0]
         image0_box = cv2.imread("camera0.png")
         image1_box = cv2.imread("camera1.png")
         data = {
             i : {
-                "cam0_raw" : image0.tolist(),
-                "cam1_raw" : image1.tolist(),
-                "cam0_box" : image0_box.tolist(),
-                "cam1_box" : image1_box.tolist(),
+                # "cam0_raw" : image0.tolist(),
+                # "cam1_raw" : image1.tolist(),
+                # "cam0_box" : image0_box.tolist(),
+                # "cam1_box" : image1_box.tolist(),
                 "cam0_2d_coord" : coords0[obj_name]["centers"][0],
                 "cam1_2d_coord" : coords1[obj_name]["centers"][0],
                 "3d_coord" : world_coords[obj_name].tolist(),
@@ -101,9 +105,16 @@ def collect_affordance_data(texts, n_iter=1):
             }
         } 
         full_data.update(data)
+
+        # save images
+        cv2.imwrite(f"{save_dir}/cam0_raw_{i}.png", image0)
+        cv2.imwrite(f"{save_dir}/cam1_raw_{i}.png", image1)
+        cv2.imwrite(f"{save_dir}/cam0_box_{i}.png", image0_box)
+        cv2.imwrite(f"{save_dir}/cam1_box_{i}.png", image1_box)
+
     
-    os.makedirs("affordance_data", exist_ok=True)
-    with open("affordance_data/fixed_pos_and_ori_no_distractions.json", "x") as outfile:
+    with open(f"affordance_data/{save_dir_name}/data.json", "x") as outfile:
+        pdb.set_trace()
         json.dump(full_data, outfile)
 
 def main(args):
@@ -113,13 +124,14 @@ def main(args):
     #     data = json.load(json_file)
     #     pdb.set_trace()
 
-    collect_affordance_data(texts=["pink grip handle on a cooking knife"], n_iter=args.n_iter)
+    collect_affordance_data(texts=["pink grip handle on a cooking knife"], save_dir_name=args.save_dir_name, n_iter=args.n_iter)
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     # parser.add_argument("--text", type=str)
-    parser.add_argument("--n_iter", type=str, default=1)
+    parser.add_argument("--n_iter", type=int, default=1)
+    parser.add_argument("--save_dir_name", type=str, default="affordance_data")
     args = parser.parse_args()
     main(args)

@@ -37,6 +37,7 @@ while True:
     )
     end_time = time.time()
     print("time this iter", end_time-start_time)
+    # print(coords)
 
 # from PIL import Image, ImageDraw, ImageFont
 # import torch

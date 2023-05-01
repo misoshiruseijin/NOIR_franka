@@ -48,8 +48,11 @@ def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
     full_data = {}
 
     for i in range(n_iter):
+
+        print(f"--------- Collecting Sample {i} -----------")
+        
         # wait for start signal input
-        # input("Set the physical environment, then press enter")
+        input("Set the physical environment, then press enter")
 
         # get image arrays
         image0 = get_camera_image(camera_interface=camera_interfaces[0])
@@ -114,13 +117,12 @@ def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
 
     
     with open(f"affordance_data/{save_dir_name}/data.json", "x") as outfile:
-        pdb.set_trace()
         json.dump(full_data, outfile)
 
 def main(args):
 
     ### test to make sure all data is readable from json ###    
-    # with open("affordance_data/fixed_pos_and_ori_no_distractions.json") as json_file:
+    # with open("affordance_data/single_obj_fixed_pos_fixed_orn/data.json") as json_file:
     #     data = json.load(json_file)
     #     pdb.set_trace()
 

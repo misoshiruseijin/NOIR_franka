@@ -6,7 +6,7 @@ sys.path.append("..")
 sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
 from primitive_skills_noir import PrimitiveSkill
 from environments.solo_envs.tablesetting_env import TablesettingEnv
-from environments.solo_envs.realrobot_env_general import RealRobotEnvSolo
+from environments.solo_envs.realrobot_env_general import RealRobotEnvGeneral
 
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.franka_interface import FrankaInterface
@@ -22,7 +22,7 @@ import pdb
 from getkey import getkey
 
 
-env = RealRobotEnvSolo(
+env = RealRobotEnvGeneral(
     env_name="TableSetting",
     controller_type="OSC_POSE"
 )

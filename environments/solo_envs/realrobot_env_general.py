@@ -25,7 +25,7 @@ from utils.detection_utils import DetectionUtils
 
 import pdb
 
-class RealRobotEnvSolo(gym.Env):
+class RealRobotEnvGeneral(gym.Env):
     """Custom Environment that follows gym interface."""
 
     def __init__(

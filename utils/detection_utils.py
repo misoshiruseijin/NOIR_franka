@@ -237,7 +237,7 @@ class DetectionUtils:
 
     #     return pos_in_world
 
-    def get_object_world_coords(self, camera_interface0, camera_interface1, texts, thresholds, wait=True):
+    def get_object_world_coords(self, camera_interface0, camera_interface1, texts, thresholds, return_2d_coords=False):
         """
         Finds 3d world coordinate of an object with certain color specified by HSV thresholds
 
@@ -280,6 +280,9 @@ class DetectionUtils:
                 base_to_camera_matrix_1,
             )
             pos_in_world[key] = pos_3d.flatten()
+
+        if return_2d_coords:
+            return pos_in_world, coords0, coords1
 
         return pos_in_world
 

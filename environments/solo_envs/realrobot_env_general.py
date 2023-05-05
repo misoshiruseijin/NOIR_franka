@@ -163,6 +163,7 @@ class RealRobotEnvGeneral(gym.Env):
         obs = self._get_current_robot_state()
         obj_pos = self.get_object_pos()
         obs.update(obj_pos)
+        breakpoint()
         return obs
 
     def _get_current_robot_state(self):
@@ -281,7 +282,7 @@ class RealRobotEnvGeneral(gym.Env):
         robot_state = self._get_current_robot_state()
         self.current_observations.update(robot_state)
 
-    def get_object_pos(self, wait=True): # TODO - this needs to be updated with OWL-VIT
+    def get_object_pos(self): 
         """
         Find positions of objects defined in self.texts
 
@@ -292,12 +293,15 @@ class RealRobotEnvGeneral(gym.Env):
             obj_positions (dict) : element is in the form { obj name as defined in self.texts : obj position (3d array) }
         """
 
-        obj_positions = self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=None, wait=wait)
-        return obj_positions    
-    
-
-
-
+        # obj_positions = self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=None, return_2d_coords=True)
+        # return obj_positions
+        world_coords, coord0, coord1 = self.detection_utils.get_object_world_coords(self.camera_interfaces[0], self.camera_interfaces[1], texts=self.texts, thresholds=None, return_2d_coords=True)
+        result = {
+            "world_coords" : world_coords,
+            "pixel_coords0" : coord0,
+            "pixel_coords1" : coord1,
+        }
+        return result
 
     """
     TODO - below functions should go in wrapper if needed

@@ -213,9 +213,8 @@ class PrimitiveSkill:
         """
         # make sure the interrupt signal received before skill execution begins is ignored
         self.r.set(self.INTERRUPT_KEY, "False") # TODO remove or replace 
-
+        print("======= starting skill execution ======")
         for item in sequence:
-            print("======= starting skill execution ======")
             # TODO - test this            
             # if human interrupts, stop execution and rehome
             if self.interrupt:

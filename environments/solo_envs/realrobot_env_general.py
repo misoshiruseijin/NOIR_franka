@@ -163,7 +163,6 @@ class RealRobotEnvGeneral(gym.Env):
         obs = self._get_current_robot_state()
         obj_pos = self.get_object_pos()
         obs.update(obj_pos)
-        breakpoint()
         return obs
 
     def _get_current_robot_state(self):

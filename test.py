@@ -29,8 +29,9 @@ env = RealRobotEnvGeneral(
 
 obs = env.reset()
 print("initial obs\n", obs)
-cup_pos = obs["shiny silver cup"]
-pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
+world_coords = obs["world_coords"]
+
+# pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
 skill_selection_vec = np.zeros(env.num_skills)
 
 skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1

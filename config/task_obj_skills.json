@@ -1,6 +1,5 @@
 {
     "TableSetting" : {
-        "red bowl" : ["pick_from_top", "pick_from_side", "push_xy"],
         "light blue bowl" : ["pick_from_top", "pick_from_side", "push_xy"],
         "shiny silver cup" : ["pick_from_top", "pick_from_side", "push_xy"],
         "green handle" : ["pick_from_top", "pick_from_side", "push_xy"],

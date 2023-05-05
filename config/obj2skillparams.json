@@ -17,8 +17,8 @@
         },
         "green handle" : {
             "place_ref" : "light blue bowl",
-            "pick_from_top": [0.0, 0.0, 0.0],
-            "place_from_top" : [-0.03, -0.01, 0.05]
+            "pick_from_top": [0.0, -0.02, 0.0],
+            "place_from_top" : [-0.03, 0.0, 0.03]
         }
     },
     "Whiteboard" : {

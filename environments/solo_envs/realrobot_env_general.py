@@ -302,6 +302,17 @@ class RealRobotEnvGeneral(gym.Env):
         }
         return result
 
+    def close(self):
+        """
+        Kills environment - # TODO doesn't work 
+        """
+        raise NotImplementedError()
+        # stop camera interface
+        for id in self.camera_interfaces.keys():
+            self.camera_interfaces[id].stop()
+        self.robot_interface.reset()
+        self.robot_interface.close()
+
     """
     TODO - below functions should go in wrapper if needed
     """

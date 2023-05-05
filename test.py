@@ -22,22 +22,22 @@ import pdb
 from getkey import getkey
 
 
+
 env = RealRobotEnvGeneral(
     env_name="TableSetting",
     controller_type="OSC_POSE"
 )
+# obs = env.reset()
+# print("initial obs\n", obs)
+# world_coords = obs["world_coords"]
 
-obs = env.reset()
-print("initial obs\n", obs)
-world_coords = obs["world_coords"]
+# # pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
+# skill_selection_vec = np.zeros(env.num_skills)
 
-# pick_pos = [cup_pos[0], cup_pos[1]+0.05, cup_pos[2]]
-skill_selection_vec = np.zeros(env.num_skills)
+# skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1
 
-skill_selection_vec[env.skill.skills["pick_from_top"]["default_idx"]] = 1
-
-obs, reward, done, info = env.step(action=np.concatenate([skill_selection_vec, pick_pos]))
-pdb.set_trace()
+# obs, reward, done, info = env.step(action=np.concatenate([skill_selection_vec, pick_pos]))
+# pdb.set_trace()
 
 
 

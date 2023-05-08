@@ -21,12 +21,117 @@ import cv2
 import pdb
 from getkey import getkey
 
+import json
+import matplotlib.pyplot as plt
+import matplotlib.ticker as plticker
+
+# def see_json_data(file_path):
 
 
-env = RealRobotEnvGeneral(
-    env_name="TableSetting",
-    controller_type="OSC_POSE"
-)
+################### CAMERA TEST ########################
+# setup camera interfaces - TODO add cam2 and cam3
+camera_interfaces = {
+    0 : CameraRedisSubInterface(camera_id=0),
+    1 : CameraRedisSubInterface(camera_id=1),
+    2 : CameraRedisSubInterface(camera_id=2),
+}
+for id in camera_interfaces.keys():
+    camera_interfaces[id].start()
+
+while True:
+    raw_image = get_camera_image(camera_interfaces[2])
+    rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+    image = Image.fromarray(np.uint8(rgb_image))
+
+    # Create a draw object
+    draw = ImageDraw.Draw(image)
+
+    # Set the grid size and color
+    grid_size = 10
+    grid_color = (0, 255, 0)
+
+    # Draw the grid
+    width, height = image.size
+    for x in range(0, width, grid_size):
+        draw.line((x, 0, x, height), fill=grid_color)
+    for y in range(0, height, grid_size):
+        draw.line((0, y, width, y), fill=grid_color)
+
+    # Save the image with the grid
+    image.save("image_with_grid.jpg")
+    print("saved image")
+    time.sleep(0.5)
+
+
+################### SKILLS WITHOUT ENVIRONMENT ####################
+# # setup robot interface
+# controller_type = "OSC_POSE"
+# controller_config = get_default_controller_config(controller_type)
+# robot_interface = FrankaInterface(
+#     general_cfg_file="config/charmander.yml",
+#     control_freq=20,
+# )
+
+# # setup skills
+# reset_joint_pos = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
+# skill = PrimitiveSkill(
+#     controller_type=controller_type,
+#     controller_config=controller_config,
+#     robot_interface=robot_interface,
+#     waypoint_height=0.25,
+#     workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
+#     reset_joint_pos=reset_joint_pos,
+# )
+
+# skill._gripper_action([1])
+
+
+
+
+
+
+
+####################### TEST ENVIRONMENT ##########################
+# env = RealRobotEnvGeneral(
+#     env_name="TableSetting",
+#     controller_type="OSC_POSE"
+# )
+
+# env.skill._gripper_action([1])
+# move_params = np.concatenate([[0.5, 0.2, 0.2], env.skill.from_top_quat, [1.0, 0.0]])
+# env.skill._move_to(params=move_params)
+# robot_interface = env.robot_interface
+# reset_joint_positions = env.skill.reset_joint_positions
+# controller_type = "JOINT_IMPEDANCE"
+# controller_cfg = get_default_controller_config(controller_type)
+# action = reset_joint_positions + [1.0]
+# time.sleep(1)
+# while True:
+#     if len(robot_interface._state_buffer) > 0:
+#         print(robot_interface._state_buffer[-1].q)
+#         print(robot_interface._state_buffer[-1].q_d)
+#         print("-----------------------")
+
+#         if (
+#             np.max(
+#                 np.abs(
+#                     np.array(robot_interface._state_buffer[-1].q)
+#                     - np.array(reset_joint_positions)
+#                 )
+#             )
+#             < 1e-3
+#         ):
+#             break
+#     robot_interface.control(controller_type=controller_type, action=action, controller_cfg=controller_cfg)
+
+# breakpoint()
+# env.robot_interface.control(
+#     controller_type="JOINT_IMPEDANCE",
+#     action=env.skill.reset_joint_positions + [1.0],
+#     controller_cfg=env.controller_config,
+# )
+# breakpoint()
+
 # obs = env.reset()
 # print("initial obs\n", obs)
 # world_coords = obs["world_coords"]

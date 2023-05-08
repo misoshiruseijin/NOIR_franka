@@ -43,9 +43,9 @@ def get_skill_param(env_name, obj_name, skill_name, world_coords, perturb=0.0):
         else:
             ref_coord = world_coords[ref]
             params = [ref_coord[0] + place_params[0], ref_coord[1] + place_params[1], ref_coord[2] + place_params[2]]
-        # add some noise to place position
-        noise = np.random.uniform(-perturb, perturb, 3)
-        params = [params[0] + noise[0], params[1] + noise[1], params[2]]
+            # add some noise to place position
+            noise = np.random.uniform(-perturb, perturb, 3)
+            params = [params[0] + noise[0], params[1] + noise[1], params[2]]
         return params
 
 def collect_data_manual(env_name, save_dir):
@@ -256,7 +256,7 @@ def main(args):
             perturb=args.pert
         )
         env.robot_interface.reset()
-        input("Reset the environment for next trajectory and press Enter")
+        # input("Reset the environment for next trajectory and press Enter")
 
 
 

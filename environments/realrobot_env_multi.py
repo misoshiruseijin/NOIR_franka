@@ -1,9 +1,13 @@
+"""
+Version of environment to communicate with EEG side.
+Sends image observations to and expects skill and parameter selection from EEG side.
+"""
+
 import gym
 import numpy as np
 from gym import spaces
 import cv2
 import time
-from PIL import Image, ImageDraw, ImageFont
 from abc import abstractmethod
 
 import sys
@@ -53,7 +57,7 @@ class RealRobotEnvMulti(gym.Env):
             control_freq=self.control_freq,
         )
 
-        # setup camera interfaces
+        # setup camera interfaces - TODO add cam2 and cam3
         self.camera_interfaces = {
             0 : CameraRedisSubInterface(camera_id=0),
             1 : CameraRedisSubInterface(camera_id=1),

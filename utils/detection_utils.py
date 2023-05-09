@@ -4,7 +4,7 @@ import pdb
 import torch
 from PIL import Image, ImageDraw, ImageFont
 from deoxys.camera_redis_interface import CameraRedisSubInterface
-from utils.camera_utils import get_camera_image, get_camera_intrinsic_matrix, get_camera_extrinsic_matrix, pose_inv
+from utils.camera_utils import get_camera_image, get_camera_intrinsic_matrix, get_camera_extrinsic_matrix, pose_inv, project_points_from_base_to_camera
 from transformers import OwlViTProcessor, OwlViTForObjectDetection
 
 # TODO - This class should be used in EEG ws side. Currently uses OWL-ViT as detector
@@ -289,3 +289,41 @@ class DetectionUtils:
 
         return {"x" : solx, "y" : soly}
 
+    def get_points_on_z(self, world_xy, camera_interface, camera_id, max_height=0.3, save_image=False): 
+        """
+        Given coordinates in 3d world, updates visualization of 3d points in camera image.
+        First point is displayed in red and the second point is displayed in blue.
+        Yaw angle is shown as a green line, where the direction of the line is the direction the front of the end effector will point to
+        Args:
+            action : one-hot skill selection vector concatentated with params
+        """
+        delta = 0.005
+        n_points = int(max_height / delta)
+        heights = np.linspace(start=0, stop=max_height, num=n_points)
+
+        world_points = np.zeros((n_points, 3))
+        world_points[:,0] = world_xy[0]
+        world_points[:,1] = world_xy[1]
+        world_points[:,2] = heights
+
+        pix_points = np.zeros((n_points, 2))
+
+        for i in range(world_points.shape[0]):
+            pix_points[i] = project_points_from_base_to_camera(
+                points=world_points[i][np.newaxis,:],
+                camera_id=camera_id,
+                camera_height=480,
+                camera_width=640,
+            )
+
+        if save_image:
+            raw_image = get_camera_image(camera_interface)
+            rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+            image = Image.fromarray(np.uint8(rgb_image))
+            draw = ImageDraw.Draw(image)
+            for pix in pix_points:
+                # print("drawing point at ", pix)
+                draw.point((pix[1], pix[0]), "blue")
+            image.save("projections.png")
+
+        return pix_points

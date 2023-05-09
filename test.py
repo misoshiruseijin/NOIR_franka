@@ -28,6 +28,26 @@ import matplotlib.ticker as plticker
 
 # def see_json_data(file_path):
 
+################## TEST Z DISCRETIZATION #####################
+# camera_interfaces = {
+#     0 : CameraRedisSubInterface(camera_id=0),
+#     1 : CameraRedisSubInterface(camera_id=1),
+#     2 : CameraRedisSubInterface(camera_id=2),
+# }
+# for id in camera_interfaces.keys():
+#     camera_interfaces[id].start()
+
+# # get world xy from top down view
+# detection_utils = DetectionUtils()
+# pix = (158., 315.)
+# # world_xy = detection_utils.get_world_xy_from_topdown_view(pix)
+# world_xy = np.array([0.5, 0.0, 0.25])
+# print(world_xy)
+# camera_id = 1
+# detection_utils.get_points_on_z(world_xy=world_xy, camera_interface=camera_interfaces[camera_id], camera_id=camera_id, max_height=0.3)
+
+
+############### TEST TOPDOWN CAMERA XY PROJECTION #################
 camera_interfaces = {
     0 : CameraRedisSubInterface(camera_id=0),
     1 : CameraRedisSubInterface(camera_id=1),
@@ -38,83 +58,9 @@ for id in camera_interfaces.keys():
 
 # get world xy from top down view
 detection_utils = DetectionUtils()
-pix = (158., 315.)
-# world_xy = detection_utils.get_world_xy_from_topdown_view(pix)
-world_xy = np.array([0.5, 0.0, 0.25])
+pix = (335., 36.)
+world_xy = detection_utils.get_world_xy_from_topdown_view(pix, camera_interfaces[2], trim=True)
 print(world_xy)
-camera_id = 1
-detection_utils.get_points_on_z(world_xy=world_xy, camera_interface=camera_interfaces[camera_id], camera_id=camera_id, max_height=0.3)
-
-# points = np.array([[0.5, 0.0, 0.20]])
-# points_on_table = points.copy()
-# points_on_table[:,-1] = 0
-
-# # get 2d projection of points in pos_list
-# camera_id = 0
-
-# points_on_table = points.copy()
-# points_on_table[:,-1] = 0
-
-# # get 2d projection of points in pos_list
-# pixels = project_points_from_base_to_camera(
-#     points=points,
-#     camera_id=camera_id,
-#     camera_height=480,
-#     camera_width=640,
-# )
-# pixels_on_table = project_points_from_base_to_camera(
-#     points=points_on_table,
-#     camera_id=camera_id,
-#     camera_height=480,
-#     camera_width=640,
-# )
-
-# # get image and plot red circle at the pixel location
-# im = get_camera_image(camera_interfaces[camera_id])
-# image = Image.fromarray(im)
-# im_raw = im.copy()
-# draw = ImageDraw.Draw(image)
-
-# r = 10 # size of circle
-
-# colors = ["red", "blue"]
-# for i, (pix, pix0) in enumerate(zip(pixels, pixels_on_table)):
-#     x, y = pix[0], pix[1]
-#     y, x = x, y
-#     x0, y0 = pix0[0], pix0[1]
-#     y0, x0 = x0, y0
-#     draw.line([x0, y0, x, y], fill=colors[i], width=2)
-#     draw.ellipse((x - r, y - r, x + r, y + r), fill=colors[i])
-#     im = np.array(image).astype(np.uint8)
-
-# # save image
-# im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
-# im_raw = cv2.cvtColor(im_raw, cv2.COLOR_RGB2BGR)
-
-# cv2.imwrite(f'param_vis_images/camera{camera_id}_with_params.png', im[:, :, ::-1])
-# breakpoint()
-
-
-
-############### TEST TOPDOWN CAMERA XY PROJECTION #################
-# camera_interfaces = {
-#     0 : CameraRedisSubInterface(camera_id=0),
-#     1 : CameraRedisSubInterface(camera_id=1),
-#     2 : CameraRedisSubInterface(camera_id=2),
-#     3 : CameraRedisSubInterface(camera_id=3),
-# }
-# for id in camera_interfaces.keys():
-#     camera_interfaces[id].start()
-
-# # get world xy from top down view
-# detection_utils = DetectionUtils()
-# pix = (158., 315.)
-# world_xy = detection_utils.get_world_xy_from_topdown_view(pix)
-# print(world_xy)
-
-# detection_utils.get_points_on_z(world_xy=world_xy, camera_interface=camera_interfaces[1], camera_id=1, max_height=0.5)
-
-# project world x, y, 0 onto camera 1 image
 
 
 ################### CAMERA TEST ########################

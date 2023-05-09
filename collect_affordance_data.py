@@ -12,10 +12,113 @@ import pdb
 camera_interfaces = {
         0 : CameraRedisSubInterface(camera_id=0),
         1 : CameraRedisSubInterface(camera_id=1),
+        2 : CameraRedisSubInterface(camera_id=2)
     }
 
 detection_utils = DetectionUtils()
 
+
+# def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
+
+#     """
+#     Collect (image, skill parameter) data for specified object
+
+#     Args:
+#         texts (list of str) : text for object of interest for OWL-ViT detector
+#         save_file_name (str) : name of file to save data in
+#         n_iter (int) : number of datapoints to detect
+
+#     Returns:
+#         data (dict) : 
+#             {
+#                 datapoint # :
+#                     2d coord in cam0 : [],
+#                     2d coord in cam1 : [],
+#                     img0 : np.array,
+#                     img1 : np.array,
+#                     img0_boxes : np.array,
+#                     img1_boxes : np.array,
+#                     3d coord : [],
+#                     params : [],
+#             }
+#     """
+
+#     save_dir = f"affordance_data/{save_dir_name}"
+#     os.makedirs(save_dir, exist_ok=True)
+
+#     full_data = {}
+
+#     for i in range(n_iter):
+
+#         print(f"--------- Collecting Sample {i} -----------")
+        
+#         # wait for start signal input
+#         input("Set the physical environment, then press enter")
+
+#         # get image arrays
+#         image0 = get_camera_image(camera_interface=camera_interfaces[0])
+#         image1 = get_camera_image(camera_interface=camera_interfaces[1])
+
+#         # get 2d image coordinate in both images
+#         coords0 = detection_utils.get_obj_pixel_coord(
+#             camera_interface=camera_interfaces[0],
+#             camera_id=0,
+#             texts=texts,
+#             thresholds=[0.001]*4,
+#             save_img=True,
+#             n_instances=1,
+#         )
+#         coords1 = detection_utils.get_obj_pixel_coord(
+#             camera_interface=camera_interfaces[1],
+#             camera_id=1,
+#             texts=texts,
+#             thresholds=[0.001]*4,
+#             save_img=True,
+#             n_instances=1,
+#         )
+
+#         print("2d coords in camera 0", coords0)
+#         print("2d coords in camera 1", coords1)
+
+#         world_coords = detection_utils.get_object_world_coords(
+#             camera_interface0=camera_interfaces[0],
+#             camera_interface1=camera_interfaces[1],
+#             texts=texts,
+#             thresholds=[0.001],
+#             wait=True,
+#         )
+#         for text in world_coords.keys():
+#             print(f"Detected {text} at {world_coords[text]}")
+
+#         # ask for parameter input
+
+#         # record coordinates and parameter
+#         obj_name = texts[0]
+#         image0_box = cv2.imread("camera0.png")
+#         image1_box = cv2.imread("camera1.png")
+#         data = {
+#             i : {
+#                 # "cam0_raw" : image0.tolist(),
+#                 # "cam1_raw" : image1.tolist(),
+#                 # "cam0_box" : image0_box.tolist(),
+#                 # "cam1_box" : image1_box.tolist(),
+#                 "cam0_2d_coord" : coords0[obj_name]["centers"][0],
+#                 "cam1_2d_coord" : coords1[obj_name]["centers"][0],
+#                 "3d_coord" : world_coords[obj_name].tolist(),
+#                 "params" : world_coords[obj_name].tolist(),
+#             }
+#         } 
+#         full_data.update(data)
+
+#         # save images
+#         cv2.imwrite(f"{save_dir}/cam0_raw_{i}.png", image0)
+#         cv2.imwrite(f"{save_dir}/cam1_raw_{i}.png", image1)
+#         cv2.imwrite(f"{save_dir}/cam0_box_{i}.png", image0_box)
+#         cv2.imwrite(f"{save_dir}/cam1_box_{i}.png", image1_box)
+
+    
+#     with open(f"affordance_data/{save_dir_name}/data.json", "x") as outfile:
+#         json.dump(full_data, outfile)
 
 def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
 
@@ -31,12 +134,8 @@ def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
         data (dict) : 
             {
                 datapoint # :
-                    2d coord in cam0 : [],
-                    2d coord in cam1 : [],
-                    img0 : np.array,
-                    img1 : np.array,
-                    img0_boxes : np.array,
-                    img1_boxes : np.array,
+                    2d coord in cam2 : [],
+                    img2_boxes : np.array,
                     3d coord : [],
                     params : [],
             }
@@ -55,29 +154,19 @@ def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
         input("Set the physical environment, then press enter")
 
         # get image arrays
-        image0 = get_camera_image(camera_interface=camera_interfaces[0])
-        image1 = get_camera_image(camera_interface=camera_interfaces[1])
+        image2 = get_camera_image(camera_interface=camera_interfaces[2])
 
         # get 2d image coordinate in both images
-        coords0 = detection_utils.get_obj_pixel_coord(
-            camera_interface=camera_interfaces[0],
-            camera_id=0,
-            texts=texts,
-            thresholds=[0.001]*4,
-            save_img=True,
-            n_instances=1,
-        )
-        coords1 = detection_utils.get_obj_pixel_coord(
-            camera_interface=camera_interfaces[1],
-            camera_id=1,
+        coords2 = detection_utils.get_obj_pixel_coord(
+            camera_interface=camera_interfaces[2],
+            camera_id=2,
             texts=texts,
             thresholds=[0.001]*4,
             save_img=True,
             n_instances=1,
         )
 
-        print("2d coords in camera 0", coords0)
-        print("2d coords in camera 1", coords1)
+        print("2d coords in camera2", coords2)
 
         world_coords = detection_utils.get_object_world_coords(
             camera_interface0=camera_interfaces[0],
@@ -93,16 +182,11 @@ def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
 
         # record coordinates and parameter
         obj_name = texts[0]
-        image0_box = cv2.imread("camera0.png")
-        image1_box = cv2.imread("camera1.png")
+        image2_box = cv2.imread("camera2.png")
+
         data = {
             i : {
-                # "cam0_raw" : image0.tolist(),
-                # "cam1_raw" : image1.tolist(),
-                # "cam0_box" : image0_box.tolist(),
-                # "cam1_box" : image1_box.tolist(),
-                "cam0_2d_coord" : coords0[obj_name]["centers"][0],
-                "cam1_2d_coord" : coords1[obj_name]["centers"][0],
+                "cam2_2d_coord" : coords2[obj_name]["centers"][0],
                 "3d_coord" : world_coords[obj_name].tolist(),
                 "params" : world_coords[obj_name].tolist(),
             }
@@ -110,14 +194,13 @@ def collect_affordance_data(texts, save_dir_name="test", n_iter=1):
         full_data.update(data)
 
         # save images
-        cv2.imwrite(f"{save_dir}/cam0_raw_{i}.png", image0)
-        cv2.imwrite(f"{save_dir}/cam1_raw_{i}.png", image1)
-        cv2.imwrite(f"{save_dir}/cam0_box_{i}.png", image0_box)
-        cv2.imwrite(f"{save_dir}/cam1_box_{i}.png", image1_box)
+        cv2.imwrite(f"{save_dir}/cam2_raw_{i}.png", image2)
+        cv2.imwrite(f"{save_dir}/cam2_box_{i}.png", image2_box)
 
     
     with open(f"affordance_data/{save_dir_name}/data.json", "x") as outfile:
         json.dump(full_data, outfile)
+
 
 def main(args):
 
@@ -134,6 +217,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # parser.add_argument("--text", type=str)
     parser.add_argument("--n_iter", type=int, default=1)
-    parser.add_argument("--save_dir_name", type=str, default="affordance_data")
+    parser.add_argument("--save_dir_name", type=str, default="test_data")
     args = parser.parse_args()
     main(args)

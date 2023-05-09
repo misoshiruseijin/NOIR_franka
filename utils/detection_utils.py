@@ -219,7 +219,37 @@ class DetectionUtils:
 
         return pos_in_world
 
-    def get_world_xy_from_topdown_view(self, pix_coords, camera_interface=None, visualize=False):
+    # def get_world_xy_from_topdown_view(self, pix_coords, camera_interface=None, visualize=False):
+    #     """
+    #     Gets world x and y coordinates from pixel coordinate of top down view image using simple linear mapping.
+    #     Assumes camera and world frames are parallel and aligned. 
+        
+    #     Args:
+    #         pix_coords (2d array of floats) : pixel coordinates
+        
+    #     Returns:
+    #         world_xy (2-tuple of floats) : x and y world coordinates corresponging to input pixel coordinates
+    #     """
+
+    #     if visualize:
+    #         assert camera_interface is not None, "camera interface must be provided for visualization"
+    #         raw_image = get_camera_image(camera_interface)
+    #         rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+    #         image = Image.fromarray(np.uint8(rgb_image))
+    #         draw = ImageDraw.Draw(image)
+    #         r = 5 # radius of center circle
+    #         # draw bounding boxes and save image
+    #         x0, y0 = pix_coords[0] - r, pix_coords[1] - r
+    #         x1, y1 = pix_coords[0] + r, pix_coords[1] + r
+    #         draw.ellipse([x0, y0, x1, y1], fill="red") # draw center coord
+    #         image.save("top_down_params.png")
+            
+    #     pix_y, pix_x = pix_coords
+    #     world_x = self.top_down_coeff["x"][0] * pix_x + self.top_down_coeff["x"][1] 
+    #     world_y = self.top_down_coeff["y"][0] * pix_y + self.top_down_coeff["y"][1]
+    #     return (world_x, world_y)
+
+    def get_world_xy_from_topdown_view(self, pix_coords, camera_interface, trim=False):
         """
         Gets world x and y coordinates from pixel coordinate of top down view image using simple linear mapping.
         Assumes camera and world frames are parallel and aligned. 
@@ -230,35 +260,34 @@ class DetectionUtils:
         Returns:
             world_xy (2-tuple of floats) : x and y world coordinates corresponging to input pixel coordinates
         """
-
-        if visualize:
-            assert camera_interface is not None, "camera interface must be provided for visualization"
-            raw_image = get_camera_image(camera_interface)
-            rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
-            image = Image.fromarray(np.uint8(rgb_image))
-            draw = ImageDraw.Draw(image)
-            r = 5 # radius of center circle
-            # draw bounding boxes and save image
-            x0, y0 = pix_coords[0] - r, pix_coords[1] - r
-            x1, y1 = pix_coords[0] + r, pix_coords[1] + r
-            draw.ellipse([x0, y0, x1, y1], fill="red") # draw center coord
-            image.save("top_down_params.png")
-            
+        trim_low = [90, 130]
+        trim_high = [450, 370]
+        assert camera_interface is not None, "camera interface must be provided for visualization"
+        assert trim == True, "trim should be true!"
+        raw_image = get_camera_image(camera_interface)
+        rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+        rgb_image = rgb_image[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
         pix_y, pix_x = pix_coords
+
+        image = Image.fromarray(np.uint8(rgb_image))
+        draw = ImageDraw.Draw(image)
+        r = 5 # radius of center circle
+        x0, y0 = pix_coords[0] - r, pix_coords[1] - r
+        x1, y1 = pix_coords[0] + r, pix_coords[1] + r
+        draw.ellipse([x0, y0, x1, y1], fill="red") # draw center coord
+        image.save("top_down_params.png")
         world_x = self.top_down_coeff["x"][0] * pix_x + self.top_down_coeff["x"][1] 
         world_y = self.top_down_coeff["y"][0] * pix_y + self.top_down_coeff["y"][1]
         return (world_x, world_y)
 
     def get_linear_mapping_coeff(self):
-        # top down view camera correspondences 
-
         # fill in the correspondences for top down view camera
         top_down_corr = {
-            "pix" : [
-                [154.0, 151.0],
-                [465.0, 141.0],
-                [467.0, 308.0],
-                [158.0, 316.0],
+            "pix" : [ # cropped 
+                [10.0, 36.0],
+                [334.0, 36.0],
+                [335.0, 205.0],
+                [10.0, 212.0],
             ],
             "world" : [
                 [0.27961881, -0.31456524],
@@ -286,7 +315,6 @@ class DetectionUtils:
         ay = np.array([[py1, 1], [py2, 1]])
         by = np.array([wy1, wy2])
         soly = np.linalg.solve(ay, by)
-
         return {"x" : solx, "y" : soly}
 
     def get_points_on_z(self, world_xy, camera_interface, camera_id, max_height=0.3, save_image=False): 

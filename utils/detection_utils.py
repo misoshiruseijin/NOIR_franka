@@ -16,76 +16,9 @@ class DetectionUtils:
 
         self.processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
         self.model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
-    
-    # def get_obj_pixel_coord(self, camera_interface, camera_id, texts, thresholds=None, save_img=True, n_instances=1):
-    #     """
-    #     Get center 2d coordinate of detected blob in image frame
 
-    #     Args:
-    #         texts : ["text1", "text2", "text3",...] each str describe object to look for
-    #         thresholds (list of floats) : confidence score threshold for each object to look for
-    #         save_img (bool) : if True, save an image visualizing detected objects with bounding box
-    #         n_instances (int) : how many of the same object to find (maximum)
+        self.top_down_coeff = self.get_linear_mapping_coeff()
 
-    #     Returns: 
-    #         coords (dict) : dictionary mapping text to pixel coordinates and score { text : [([x,y], score), ([x,y], score)] }
-    #             { text : [] } for objects not found
-    #     """
-        
-    #     assert n_instances == 1, "n_instances > 1 is currently not supported"
-
-    #     # get camera image
-    #     image = Image.fromarray(np.uint8(get_camera_image(camera_interface)[:,:,::-1]))
-        
-    #     if thresholds is None:
-    #         thresholds = [0.001] * len(texts)
-    #     obj2thresh = dict(zip(texts, thresholds))
-    #     obj2highscore = {text : 0.0 for text in texts}
-
-    #     inputs = self.processor(text=[texts], images=image, return_tensors="pt")
-    #     outputs = self.model(**inputs)
-        
-    #     # Target image sizes (height, width) to rescale box predictions [batch_size, 2]
-    #     target_sizes = torch.Tensor([image.size[::-1]])
-    #     # Convert outputs (bounding boxes and class logits) to COCO API
-    #     results = self.processor.post_process(outputs=outputs, target_sizes=target_sizes)
-
-    #     i = 0  # Retrieve predictions for the first image for the corresponding text queries
-    #     boxes, scores, labels = results[i]["boxes"], results[i]["scores"], results[i]["labels"] # this includes everything detected
-     
-    #     # coords = {key : {"coords" : [], "scores" : []} for key in texts} # { text : [ [[list of coords], [list of scores] ] }
-    #     coords = {key : {"boxes" : [], "centers" : [], "scores" : []} for key in texts}
-
-    #     for box, score, label in zip(boxes, scores, labels):
-    #         box = [round(i, 2) for i in box.tolist()]
-    #         obj_name = texts[label]
-    #         if score >= obj2thresh[obj_name] and score > obj2highscore[obj_name]:
-    #             # print(f"Detected {obj_name} with confidence {round(score.item(), 3)} at location {box}")
-    #             coords[obj_name]["boxes"] = box
-    #             coords[obj_name]["scores"] = score.item()
-    #             center = ( round((box[0] + box[2])/2), round((box[1] + box[3])/2) )
-    #             coords[obj_name]["centers"] = center
-    
-    #     if save_img:
-    #         draw = ImageDraw.Draw(image)
-    #         colors = ["red", "blue", "green", "purple", "orange", "black", "violet", "teal", "darkgreen"]
-    #         idx = 0
-    #         font = ImageFont.truetype('arial.ttf', 24)
-    #         txt_start_pos = (15, 15)
-    #         r = 5 # radius of center circle
-    #         # draw bounding boxes and save image
-    #         for key in coords:
-    #             box = coords[key]["boxes"]
-    #             center = coords[key]["centers"]
-    #             color = colors[idx]
-    #             x0, y0 = center[0] - r, center[1] - r
-    #             x1, y1 = center[0] + r, center[1] + r
-    #             draw.ellipse([x0, y0, x1, y1], fill=color) # draw center coord
-    #             draw.text((txt_start_pos[0], txt_start_pos[1]+28*idx), key, font = font, align ="left", fill=color) 
-    #             idx += 1
-    #         image.save(f"camera{camera_id}.png")
-    #         print(f"Saving camera{camera_id}.png")
-    #     return coords        
 
     def get_obj_pixel_coord(self, camera_interface, camera_id, texts, thresholds=None, save_img=True, n_instances=1):
         """
@@ -286,5 +219,73 @@ class DetectionUtils:
 
         return pos_in_world
 
+    def get_world_xy_from_topdown_view(self, pix_coords, camera_interface=None, visualize=False):
+        """
+        Gets world x and y coordinates from pixel coordinate of top down view image using simple linear mapping.
+        Assumes camera and world frames are parallel and aligned. 
+        
+        Args:
+            pix_coords (2d array of floats) : pixel coordinates
+        
+        Returns:
+            world_xy (2-tuple of floats) : x and y world coordinates corresponging to input pixel coordinates
+        """
 
+        if visualize:
+            assert camera_interface is not None, "camera interface must be provided for visualization"
+            raw_image = get_camera_image(camera_interface)
+            rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+            image = Image.fromarray(np.uint8(rgb_image))
+            draw = ImageDraw.Draw(image)
+            r = 5 # radius of center circle
+            # draw bounding boxes and save image
+            x0, y0 = pix_coords[0] - r, pix_coords[1] - r
+            x1, y1 = pix_coords[0] + r, pix_coords[1] + r
+            draw.ellipse([x0, y0, x1, y1], fill="red") # draw center coord
+            image.save("top_down_params.png")
+            
+        pix_y, pix_x = pix_coords
+        world_x = self.top_down_coeff["x"][0] * pix_x + self.top_down_coeff["x"][1] 
+        world_y = self.top_down_coeff["y"][0] * pix_y + self.top_down_coeff["y"][1]
+        return (world_x, world_y)
+
+    def get_linear_mapping_coeff(self):
+        # top down view camera correspondences 
+
+        # fill in the correspondences for top down view camera
+        top_down_corr = {
+            "pix" : [
+                [154.0, 151.0],
+                [465.0, 141.0],
+                [467.0, 308.0],
+                [158.0, 316.0],
+            ],
+            "world" : [
+                [0.27961881, -0.31456524],
+                [0.28143991, 0.25359549],
+                [0.58866825, 0.24407219],
+                [0.58267162, -0.31841734],
+            ]
+        }
+
+        world = top_down_corr["world"]
+        pix = top_down_corr["pix"]
+        wx1 = (world[0][0] + world[1][0]) / 2
+        wx2 = (world[2][0] + world[3][0]) / 2
+        wy1 = (world[0][1] + world[3][1]) / 2
+        wy2 = (world[1][1] + world[2][1]) / 2
+
+        px1 = (pix[0][1] + pix[1][1]) / 2
+        px2 = (pix[2][1] + pix[3][1]) / 2
+        py1 = (pix[0][0] + pix[3][0]) / 2
+        py2 = (pix[1][0] + pix[2][0]) / 2
+        
+        ax = np.array([[px1, 1], [px2, 1]])
+        bx = np.array([wx1, wx2])
+        solx = np.linalg.solve(ax, bx)
+        ay = np.array([[py1, 1], [py2, 1]])
+        by = np.array([wy1, wy2])
+        soly = np.linalg.solve(ay, by)
+
+        return {"x" : solx, "y" : soly}
 

@@ -11,6 +11,7 @@ def main(args):
     camera_interfaces = {
         0 : CameraRedisSubInterface(camera_id=0),
         1 : CameraRedisSubInterface(camera_id=1),
+        2 : CameraRedisSubInterface(camera_id=2),
     }
 
     time.sleep(0.5)

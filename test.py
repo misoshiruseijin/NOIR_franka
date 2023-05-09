@@ -15,6 +15,7 @@ from deoxys.experimental.motion_utils import reset_joints_to
 from utils.camera_utils import project_points_from_base_to_camera, get_camera_image
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 import utils.transformation_utils as T
+from utils.detection_utils import DetectionUtils
 
 from PIL import Image, ImageDraw
 import cv2
@@ -28,8 +29,8 @@ import matplotlib.ticker as plticker
 # def see_json_data(file_path):
 
 
-################### CAMERA TEST ########################
-# setup camera interfaces - TODO add cam2 and cam3
+
+############### TEST TOPDOWN CAMERA XY PROJECTION #################
 camera_interfaces = {
     0 : CameraRedisSubInterface(camera_id=0),
     1 : CameraRedisSubInterface(camera_id=1),
@@ -38,29 +39,45 @@ camera_interfaces = {
 for id in camera_interfaces.keys():
     camera_interfaces[id].start()
 
-while True:
-    raw_image = get_camera_image(camera_interfaces[2])
-    rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
-    image = Image.fromarray(np.uint8(rgb_image))
+detection_utils = DetectionUtils()
+pix = (158., 315.)
+world_xy = detection_utils.get_world_xy_from_topdown_view(pix)
+print(world_xy)
 
-    # Create a draw object
-    draw = ImageDraw.Draw(image)
 
-    # Set the grid size and color
-    grid_size = 10
-    grid_color = (0, 255, 0)
+################### CAMERA TEST ########################
+# setup camera interfaces - TODO add cam2 and cam3
+# camera_interfaces = {
+#     0 : CameraRedisSubInterface(camera_id=0),
+#     1 : CameraRedisSubInterface(camera_id=1),
+#     2 : CameraRedisSubInterface(camera_id=2),
+# }
+# for id in camera_interfaces.keys():
+#     camera_interfaces[id].start()
 
-    # Draw the grid
-    width, height = image.size
-    for x in range(0, width, grid_size):
-        draw.line((x, 0, x, height), fill=grid_color)
-    for y in range(0, height, grid_size):
-        draw.line((0, y, width, y), fill=grid_color)
+# while True:
+#     raw_image = get_camera_image(camera_interfaces[2])
+#     rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+#     image = Image.fromarray(np.uint8(rgb_image))
 
-    # Save the image with the grid
-    image.save("image_with_grid.jpg")
-    print("saved image")
-    time.sleep(0.5)
+#     # Create a draw object
+#     draw = ImageDraw.Draw(image)
+
+#     # Set the grid size and color
+#     grid_size = 10
+#     grid_color = (0, 255, 0)
+
+#     # Draw the grid
+#     width, height = image.size
+#     for x in range(0, width, grid_size):
+#         draw.line((x, 0, x, height), fill=grid_color)
+#     for y in range(0, height, grid_size):
+#         draw.line((0, y, width, y), fill=grid_color)
+
+#     # Save the image with the grid
+#     image.save("image_with_grid.jpg")
+#     print("saved image")
+#     time.sleep(0.5)
 
 
 ################### SKILLS WITHOUT ENVIRONMENT ####################

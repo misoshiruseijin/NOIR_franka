@@ -32,7 +32,6 @@ camera_interfaces = {
     0 : CameraRedisSubInterface(camera_id=0),
     1 : CameraRedisSubInterface(camera_id=1),
     2 : CameraRedisSubInterface(camera_id=2),
-    3 : CameraRedisSubInterface(camera_id=3),
 }
 for id in camera_interfaces.keys():
     camera_interfaces[id].start()

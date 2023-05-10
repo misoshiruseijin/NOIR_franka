@@ -22,7 +22,7 @@ class DetectionUtils:
 
     def get_obj_pixel_coord(self, camera_interface, camera_id, texts, thresholds=None, save_img=True, n_instances=1):
         """
-        Get center 2d coordinate of detected blob in image frame
+        Get center 2d coordinate of detected objects. Grabs current camera frame.
 
         Args:
             texts : ["text1", "text2", "text3",...] each str describe object to look for
@@ -99,6 +99,87 @@ class DetectionUtils:
             image.save(f"camera{camera_id}.png")
             print(f"Saving camera{camera_id}.png")
         return coords        
+
+    def get_obj_pixel_coord_from_image(self, img_array, texts, camera_id, thresholds=None, save_img=True, n_instances=1):
+        """
+        Get center 2d coordinate of detected objects, taknig an image array as input. Useful when using preprocessed image rather than the most recent raw camera image.
+
+        Args:
+            image_array (ndarray) : input image
+            texts : ["text1", "text2", "text3",...] each str describe object to look for
+            camera_id (int) : only used for saved image name
+            thresholds (list of floats) : confidence score threshold for each object to look for
+            save_img (bool) : if True, save an image visualizing detected objects with bounding box
+            n_instances (int) : how many of the same object to find (maximum)
+
+        Returns: 
+            coords (dict) : dictionary mapping text to pixel coordinates and score { text : [([x,y], score), ([x,y], score)] }
+                { text : [] } for objects not found
+        """
+        
+        # raw iamge to pil image
+        rgb_image = img_array[:,:,::-1] # convert from bgr to rgb
+        image = Image.fromarray(np.uint8(rgb_image))
+        
+        if thresholds is None:
+            thresholds = [0.001] * len(texts)
+        obj2thresh = dict(zip(texts, thresholds))
+
+        inputs = self.processor(text=[texts], images=image, return_tensors="pt")
+        outputs = self.model(**inputs)
+        
+        # Target image sizes (height, width) to rescale box predictions [batch_size, 2]
+        target_sizes = torch.Tensor([image.size[::-1]])
+        # Convert outputs (bounding boxes and class logits) to COCO API
+        results = self.processor.post_process(outputs=outputs, target_sizes=target_sizes)
+
+        i = 0  # Retrieve predictions for the first image for the corresponding text queries
+        boxes, scores, labels = results[i]["boxes"], results[i]["scores"], results[i]["labels"] # this includes everything detected
+     
+        # coords = {key : {"coords" : [], "scores" : []} for key in texts} # { text : [ [[list of coords], [list of scores] ] }
+        coords = {key : {"boxes" : [], "centers" : [], "scores" : []} for key in texts}
+
+        for box, score, label in zip(boxes, scores, labels):
+            box = [round(i, 2) for i in box.tolist()]
+            obj_name = texts[label]
+            if score >= obj2thresh[obj_name]:
+                # print(f"Detected {obj_name} with confidence {round(score.item(), 3)} at location {box}")
+                coords[obj_name]["boxes"].append(box)
+                coords[obj_name]["scores"].append(score.item())
+                center = ( round((box[0] + box[2])/2), round((box[1] + box[3])/2) )
+                coords[obj_name]["centers"].append(center)
+            
+        # extract the top n_instances objects - TODO if needed, allow different max number for each object
+        for key in coords:
+            # check if there are more than n_instances 
+            if len(coords[key]["scores"]) > n_instances:
+                scores = coords[key]["scores"]
+                indices = np.argsort(scores)[::-1][:n_instances]
+                # discard all except top scoring ones
+                coords[key]["boxes"] = np.array(coords[key]["boxes"])[indices].tolist()
+                coords[key]["scores"] = np.array(coords[key]["scores"])[indices].tolist()
+                coords[key]["centers"] = np.array(coords[key]["centers"])[indices].tolist()
+
+        if save_img:
+            draw = ImageDraw.Draw(image)
+            colors = ["red", "blue", "green", "purple", "orange", "black", "violet", "teal", "darkgreen"]
+            idx = 0
+            font = ImageFont.truetype('arial.ttf', 24)
+            txt_start_pos = (15, 15)
+            r = 5 # radius of center circle
+            # draw bounding boxes and save image
+            for key in coords:
+                for box, center in zip(coords[key]["boxes"], coords[key]["centers"]):
+                    color = colors[idx]
+                    draw.rectangle(box, fill=None, outline=color) # draw bounding box
+                    x0, y0 = center[0] - r, center[1] - r
+                    x1, y1 = center[0] + r, center[1] + r
+                    draw.ellipse([x0, y0, x1, y1], fill=color) # draw center coord
+                    draw.text((txt_start_pos[0], txt_start_pos[1]+28*idx), key, font = font, align ="left", fill=color) 
+                    idx += 1
+            image.save(f"camera{camera_id}.png")
+            print(f"Saving camera{camera_id}.png")
+        return coords 
 
     # convert back to 3d world coordinates
     def convert_points_from_camera_to_base(self, X1, X2, I1, I2, E1, E2):
@@ -284,10 +365,10 @@ class DetectionUtils:
         # fill in the correspondences for top down view camera
         top_down_corr = {
             "pix" : [ # cropped 
-                [10.0, 36.0],
-                [334.0, 36.0],
-                [335.0, 205.0],
-                [10.0, 212.0],
+                [11.0, 35.0],
+                [334.0, 33.0],
+                [337.0, 205.0],
+                [10.0, 213.0],
             ],
             "world" : [
                 [0.27961881, -0.31456524],

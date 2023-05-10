@@ -83,15 +83,12 @@ class RealRobotEnvGeneral(gym.Env):
         self.texts.remove("none")
 
         # setup skills
-        if reset_joint_pos is None:
-            reset_joint_pos = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
         self.skill = PrimitiveSkill(
             controller_type=self.controller_type,
             controller_config=self.controller_config,
             robot_interface=self.robot_interface,
             waypoint_height=skill_config["waypoint_height"],
             workspace_limits=self.workspace_limits,
-            reset_joint_pos=reset_joint_pos,
         )
 
         self.num_skills = self.skill.num_skills

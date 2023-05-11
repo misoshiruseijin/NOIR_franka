@@ -70,17 +70,20 @@ class RealRobotEnvGeneral(gym.Env):
         )
 
         # setup camera interfaces
-        self.camera_interfaces = {
-            0 : CameraRedisSubInterface(camera_id=0),
-            1 : CameraRedisSubInterface(camera_id=1),
-        }
-        for id in self.camera_interfaces.keys():
-            self.camera_interfaces[id].start()
+        # self.camera_interfaces = {
+        #     0 : CameraRedisSubInterface(camera_id=0),
+        #     1 : CameraRedisSubInterface(camera_id=1),
+        # }
+        # for id in self.camera_interfaces.keys():
+        #     self.camera_interfaces[id].start()
         
         # setup detection-related things
         self.detection_utils = DetectionUtils()
         self.texts = list(self.obj2skills.keys())
         self.texts.remove("none")
+        
+        # camera interfaces
+        self.camera_interfaces = self.detection_utils.camera_interfaces
 
         # setup skills
         self.skill = PrimitiveSkill(

@@ -15,7 +15,8 @@ from deoxys.experimental.motion_utils import reset_joints_to
 from utils.camera_utils import project_points_from_base_to_camera, get_camera_image
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 import utils.transformation_utils as T
-from utils.detection_utils import DetectionUtils
+# from utils.detection_utils import DetectionUtils
+from utils.detection_utils_eeg import DetectionUtils
 
 from PIL import Image, ImageDraw, ImageFont
 import cv2
@@ -48,21 +49,61 @@ import matplotlib.ticker as plticker
 
 
 ############### TEST TOPDOWN CAMERA XY PROJECTION #################
-# camera_interfaces = {
-#     0 : CameraRedisSubInterface(camera_id=0),
-#     1 : CameraRedisSubInterface(camera_id=1),
-#     2 : CameraRedisSubInterface(camera_id=2),
-# }
-# for id in camera_interfaces.keys():
-#     camera_interfaces[id].start()
+camera_interfaces = {
+    0 : CameraRedisSubInterface(camera_id=0),
+    1 : CameraRedisSubInterface(camera_id=1),
+    2 : CameraRedisSubInterface(camera_id=2),
+}
+for id in camera_interfaces.keys():
+    camera_interfaces[id].start()
 
-# # get world xy from top down view
-# detection_utils = DetectionUtils()
+# get world xy from top down view
+detection_utils = DetectionUtils()
 # pix = (335., 36.)
 # world_xy = detection_utils.get_world_xy_from_topdown_view(pix, camera_interfaces[2], trim=True)
 # print(world_xy)
+img0 = get_camera_image(camera_interface=camera_interfaces[0])
+img1 = get_camera_image(camera_interface=camera_interfaces[1])
 
+trim_low = [90, 130]
+trim_high = [450, 370]
+img2 = get_camera_image(camera_interface=camera_interfaces[2])
+img2 = img2[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
 
+pix0 = detection_utils.get_obj_pixel_coord(
+    img_array=img0,
+    texts=["red mug"],
+    save_filename="testing",
+)
+breakpoint()
+
+pix1 = detection_utils.get_obj_pixel_coord(
+    img_array=img1,
+    texts=["red mug"],
+    save_filename="testing",
+)
+breakpoint()
+
+pix2 = detection_utils.get_obj_pixel_coord(
+    img_array=img2,
+    texts=["red mug"],
+    save_filename="testing",
+)
+breakpoint()
+
+world = detection_utils.get_object_world_coords(
+    cam0_img=img0,
+    cam1_img=img1,
+    texts=["red mug"],
+)
+breakpoint()
+
+xy = detection_utils.get_world_xy_from_topdown_view(
+    pix_coords=(11.0, 35.0),
+    img_array=img2,
+)
+
+breakpoint()
 ################### CAMERA TEST ########################
 # setup camera interfaces - TODO add cam2 and cam3
 # camera_interfaces = {
@@ -100,24 +141,24 @@ import matplotlib.ticker as plticker
 
 ################### SKILLS WITHOUT ENVIRONMENT ####################
 # setup robot interface
-controller_type = "OSC_POSE"
-controller_config = get_default_controller_config(controller_type)
-robot_interface = FrankaInterface(
-    general_cfg_file="config/charmander.yml",
-    control_freq=20,
-)
+# controller_type = "OSC_POSE"
+# controller_config = get_default_controller_config(controller_type)
+# robot_interface = FrankaInterface(
+#     general_cfg_file="config/charmander.yml",
+#     control_freq=20,
+# )
 
-# setup skills
-skill = PrimitiveSkill(
-    controller_type=controller_type,
-    controller_config=controller_config,
-    robot_interface=robot_interface,
-    waypoint_height=0.25,
-    workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
-)
+# # setup skills
+# skill = PrimitiveSkill(
+#     controller_type=controller_type,
+#     controller_config=controller_config,
+#     robot_interface=robot_interface,
+#     waypoint_height=0.25,
+#     workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
+# )
 
 # skill._rehome_pos_quat(params=np.concatenate([skill.from_top_reset_eef_pos, skill.from_side_quat, [1, 1]]))
-skill._pick_from_top(params=np.array([0.5, 0.0, 0.2]))
+# skill._pick_from_top(params=np.array([0.5, 0.0, 0.2]))
 # skill._pick_from_side(params=np.array([0.5, 0.0, 0.2]))
 # skill._gripper_action([1])
 # skill._rehome(params=np.append(skill.reset_joint_positions["from_top"], 0.0))

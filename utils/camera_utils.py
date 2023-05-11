@@ -9,16 +9,8 @@ Script to test camera calibration by reading robot end effector pose and project
 Many functions are based on https://github.com/ARISE-Initiative/robosuite/blob/master/robosuite/utils/camera_utils.py
 """
 
-import time
-import cv2
-import imageio
 import numpy as np
-from PIL import Image, ImageDraw
-
-from deoxys.franka_interface import FrankaInterface
-from deoxys.camera_redis_interface import CameraRedisSubInterface
-from deoxys import config_root
-
+from PIL import Image
 
 def get_camera_intrinsic_matrix(camera_id=0):
     """

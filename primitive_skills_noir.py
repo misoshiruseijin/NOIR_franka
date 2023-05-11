@@ -72,6 +72,8 @@ class PrimitiveSkill:
         self.reset_joint_positions = {
             "from_top" : [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026],
             "from_side" : [0.45222925, 0.3912074, 0.41882967, -2.10946937, -0.89842106, 0.98800324, 0.41594728],
+            "out_of_way_top" : [],
+            "out_of_way_side" : [],
         }
         self.waypoint_height = waypoint_height # height of waypoint in pick, place, push skills
         if workspace_limits is not None:

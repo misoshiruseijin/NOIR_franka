@@ -20,7 +20,8 @@ from deoxys.experimental.motion_utils import reset_joints_to
 #         ]
 
 #### NOIR Reset Position ####
-reset_joint_positions = [0.09180193, -0.31747033, -0.01917534, -2.3957181, -0.01349398, 2.126882, 0.84652007]
+reset_joint_positions = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
+
 
 robot_interface = FrankaInterface(
     general_cfg_file="config/charmander.yml"

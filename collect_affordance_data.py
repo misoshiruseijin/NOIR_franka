@@ -1,4 +1,4 @@
-from utils.detection_utils import DetectionUtils
+from ..utils.detection_utils import DetectionUtils
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 from utils.camera_utils import get_camera_image, get_camera_intrinsic_matrix, get_camera_extrinsic_matrix, pose_inv, project_points_from_base_to_camera
 import argparse

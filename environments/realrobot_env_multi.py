@@ -28,7 +28,7 @@ class RealRobotEnvMulti(gym.Env):
 
     def __init__(
         self,
-        controller_type,
+        controller_type="OSC_POSE",
         general_cfg_file="config/charmander.yml",
         control_freq=20,
         workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
@@ -38,7 +38,6 @@ class RealRobotEnvMulti(gym.Env):
         },
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
         normalized_params=True,
-        reset_joint_pos=None,
     ): 
 
         super().__init__()
@@ -57,46 +56,32 @@ class RealRobotEnvMulti(gym.Env):
             control_freq=self.control_freq,
         )
 
-        # setup camera interfaces - TODO add cam2 and cam3
+        # setup camera interfaces 
         self.camera_interfaces = {
             0 : CameraRedisSubInterface(camera_id=0),
             1 : CameraRedisSubInterface(camera_id=1),
+            2 : CameraRedisSubInterface(camera_id=2),
         }
         for id in self.camera_interfaces.keys():
             self.camera_interfaces[id].start()
 
         # setup skills
-        if reset_joint_pos is None:
-            reset_joint_pos = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
         self.skill = PrimitiveSkill(
             controller_type=self.controller_type,
             controller_config=self.controller_config,
             robot_interface=self.robot_interface,
             waypoint_height=skill_config["waypoint_height"],
             workspace_limits=self.workspace_limits,
-            reset_joint_pos=reset_joint_pos,
         )
 
         self.num_skills = self.skill.num_skills
-
-        # Define action and observation spaces - TODO this needs to be changed
-        # if self.use_skills:
-        #     max_num_params = self.skill.max_num_params
-        #     print("max num params: ", max_num_params)
-        #     high = np.ones(self.num_skills + max_num_params)
-        #     low = -high
-        #     self.action_space = spaces.Box(low=low, high=high)
-        # else:
-        #     high = np.ones(5) if use_yaw else np.ones(4)
-        #     # high = np.ones(7)
-        #     low = -high
-        #     self.action_space = spaces.Box(low=low, high=high)
-
         self.current_infos = {}
 
-        # send initial camera images to server
-        self._upload_camera_images()
-        
+        self.reset_q = None
+
+        # reset joints
+        print("--------- Resseting Joints -----------")
+        self.skill._reset_joints(np.append(self.skill.reset_joint_positions["from_top"], -1.0))
 
     def reward(self,):
         """
@@ -111,7 +96,7 @@ class RealRobotEnvMulti(gym.Env):
         
         return 0
 
-    def step(self, action=[], execute=True): # TODO this should be changed to use skills only - we don't need low level control
+    def step(self, action): 
 
         """
         Commands robot to execute skill corresponding to input action
@@ -119,36 +104,29 @@ class RealRobotEnvMulti(gym.Env):
         Args:
             action : skill selection vector concatenated with skill parameters
         """ 
-        # receive action from server
-        action = self._receive_action()
 
         # execute skill
         self.skill.execute_skill(action)
         reward, done, info = self._post_action(action)
-
-        # send new camera images to server
-        self._upload_camera_images()
-
-        # receive observations
-        obs = self._receive_object_states()  
-        robot_state = self._get_current_robot_state()
-        obs.update(robot_state)
+        # # upload images
+        # self._upload_images()
+        obs = {}
 
         return obs, reward, done, info
 
     def _post_action(self, action): # TODO reset only when task is complete or if human wants it to??
-            """
-            Do any housekeeping after taking an action.
-            Args:
-                action (np.array): Action to execute within the environment
-            Returns:
-                3-tuple:
-                    - (float) reward from the environment
-                    - (bool) whether the current episode is completed or not
-                    - (dict) empty dict to be filled with information by subclassed method
-            """
-            reward = self.reward()
-            return reward, False, {}
+        """
+        Do any housekeeping after taking an action.
+        Args:
+            action (np.array): Action to execute within the environment
+        Returns:
+            3-tuple:
+                - (float) reward from the environment
+                - (bool) whether the current episode is completed or not
+                - (dict) empty dict to be filled with information by subclassed method
+        """
+        reward = self.reward()
+        return reward, False, {}
         
     def reset(self): # TODO - flattening should happen in wrapper if needed
         """
@@ -156,7 +134,7 @@ class RealRobotEnvMulti(gym.Env):
         """
         reset_joints_to(self.robot_interface, self.skill.reset_joint_positions)
         time.sleep(0.5)
-        self._upload_camera_images()
+        self._upload_obj_selection_images()
         obs = self._receive_object_states()
         robot_state = self._get_current_robot_state()
         obs.update(robot_state)
@@ -164,7 +142,68 @@ class RealRobotEnvMulti(gym.Env):
         self.current_infos = {}
         return obs
 
-    def _get_current_robot_state(self):
+    def get_image_observations(self, action, save_images=False):
+        """
+        Takes images for object selection and parameter selection, and uploads them to server
+        """
+
+        # take images for object selection
+        obj_image0 = get_camera_image(self.camera_interfaces[0])
+        obj_image1 = get_camera_image(self.camera_interfaces[1])
+
+        # move robot out of camera view
+        self._move_out_of_way(action)
+
+        # take images for parameter selection (image 2 for x and y, image 0 or 1 for z)
+        param_image0 = get_camera_image(self.camera_interfaces[0])
+        param_image1 = get_camera_image(self.camera_interfaces[1])
+        param_image2 = get_camera_image(self.camera_interfaces[2])
+
+        if save_images:
+            cv2.imwrite("obj_selection_img0.png", obj_image0)
+            cv2.imwrite("obj_selection_img1.png", obj_image1)
+            cv2.imwrite("param_selection_img0.png", param_image0)
+            cv2.imwrite("param_selection_img1.png", param_image1)
+            cv2.imwrite("param_selection_img2.png", param_image2)
+
+        # move back to original position
+        self._move_back_in_view()
+
+        data = {
+            "obj_image0" : obj_image0,
+            "obj_image1" : obj_image1,
+            "param_image0" : param_image0,
+            "param_image1" : param_image1,
+            "param_image2" : param_image2,
+        }
+
+        return data
+
+    def _move_out_of_way(self, action):
+        """
+        Move the robot out of camera view (joint position depends on which skill was called)
+        """
+        # save current joint configuration
+        self.reset_q = np.append(self.robot_interface.last_q, self.skill._get_gripper_state())
+
+        skill_idx = np.argmax(action[:self.skill.num_skills])
+        skill_name = self.skill.idx2skill[skill_idx]
+        gripper_state = self.skill._get_gripper_state()
+        if skill_name in ["pick_from_side", "pour_from_side"]:
+            out_of_way_q = self.skill.reset_joint_positions["out_of_way_side"]
+        else:
+            out_of_way_q = self.skill.reset_joint_positions["out_of_way_top"]
+        out_of_way_q = out_of_way_q + [gripper_state]
+
+        self.skill._reset_joints(out_of_way_q)
+
+    def _move_back_in_view(self):
+        """
+        Move arm back to joint configuration before self._move_out_of_way() is called
+        """
+        self.skill._reset_joints(self.reset_q)
+
+    def _get_current_robot_state(self): 
         """
         Return current proprio state of robot [position, quat, gripper state]
         Gripper state is binary : 1 = closed, -1 = opened
@@ -188,30 +227,3 @@ class RealRobotEnvMulti(gym.Env):
             "gripper_state" : gripper_state,
         }
         return robot_state
-
-    def _upload_camera_images(self):
-
-        raw_image0 = get_camera_image(self.camera_interfaces[0])
-        rgb_image0 = raw_image0[:,:,::-1] # convert from bgr to rgb
-        raw_image1 = get_camera_image(self.camera_interfaces[1])
-        rgb_image1 = raw_image1[:,:,::-1] # convert from bgr to rgb
-        
-        # TODO - send rgb images to server
-
-    def _receive_action(self):
-        """
-        Gets action from server
-        TODO - decide between:
-            get entire action vector : need to have skill dictionary on eeg side
-            get skill name + param vector : no additional info needed on eeg side
-        """
-        action = [] # TODO get this from server
-        return action
-
-    def _receive_object_states(self):
-        """
-        Get 3d coordinate of objects 
-        """
-        obs = {} # TODO get this from server
-        return obs
-

@@ -44,7 +44,6 @@ class PrimitiveSkill:
         waypoint_height=0.25,
         workspace_limits=None,
         idx2skill=None,
-        # reset_joint_pos=None,
         ):
 
         """
@@ -72,8 +71,8 @@ class PrimitiveSkill:
         self.reset_joint_positions = {
             "from_top" : [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026],
             "from_side" : [0.45222925, 0.3912074, 0.41882967, -2.10946937, -0.89842106, 0.98800324, 0.41594728],
-            "out_of_way_top" : [],
-            "out_of_way_side" : [],
+            "out_of_way_top" : [-np.pi/2, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026],
+            "out_of_way_side" : [-np.pi/2, 0.3912074, 0.41882967, -2.10946937, -0.89842106, 0.98800324, 0.41594728],
         }
         self.waypoint_height = waypoint_height # height of waypoint in pick, place, push skills
         if workspace_limits is not None:
@@ -184,6 +183,7 @@ class PrimitiveSkill:
         self.allow_interrupt = True # if human is allowed to interrupt (prevents interruption during rehome)
         self.rehome_pos = self.from_top_reset_eef_pos # position to rehome to for the skill currently being executed
         self.rehome_quat = self.from_top_quat # quat to rehome to for the skill currently being executed
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0)
 
         # TODO remove this after testing
         self.r = redis.Redis()
@@ -543,7 +543,6 @@ class PrimitiveSkill:
     def _reset_joints(self, params):
         """
         Resets joints to fixed position.
-        If reset_gripper > 0, opens the gripper while resetting. Else, keeps the gripper at current width.
 
         Args:
             params (8-tuple of floats) : [reset joint positions, gripper_action]

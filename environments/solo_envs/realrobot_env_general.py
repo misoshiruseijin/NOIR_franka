@@ -31,8 +31,9 @@ class RealRobotEnvGeneral(gym.Env):
     def __init__(
         self,
         env_name,
-        controller_type,
+        controller_type="OSC_POSE",
         general_cfg_file="config/charmander.yml",
+        
         control_freq=20,
         workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)}, # TODO
         skill_config={
@@ -111,7 +112,7 @@ class RealRobotEnvGeneral(gym.Env):
         
         return 0
 
-    def step(self, action, execute=True):
+    def step(self, action):
 
         """
         Commands robot to execute skill corresponding to input action
@@ -301,17 +302,6 @@ class RealRobotEnvGeneral(gym.Env):
             "pixel_coords1" : coord1,
         }
         return result
-
-    def close(self):
-        """
-        Kills environment - # TODO doesn't work 
-        """
-        raise NotImplementedError()
-        # stop camera interface
-        for id in self.camera_interfaces.keys():
-            self.camera_interfaces[id].stop()
-        self.robot_interface.reset()
-        self.robot_interface.close()
 
     """
     TODO - below functions should go in wrapper if needed

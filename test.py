@@ -7,6 +7,7 @@ sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
 from primitive_skills_noir import PrimitiveSkill
 from environments.solo_envs.tablesetting_env import TablesettingEnv
 from environments.solo_envs.realrobot_env_general import RealRobotEnvGeneral
+from environments.realrobot_env_multi import RealRobotEnvMulti
 
 from deoxys.utils.config_utils import (get_default_controller_config, verify_controller_config)
 from deoxys.franka_interface import FrankaInterface
@@ -15,8 +16,8 @@ from deoxys.experimental.motion_utils import reset_joints_to
 from utils.camera_utils import project_points_from_base_to_camera, get_camera_image
 from deoxys.camera_redis_interface import CameraRedisSubInterface
 import utils.transformation_utils as T
-# from utils.detection_utils import DetectionUtils
-from utils.detection_utils_eeg import DetectionUtils
+from utils.detection_utils import DetectionUtils
+# from utils.detection_utils_eeg import DetectionUtils
 
 from PIL import Image, ImageDraw, ImageFont
 import cv2
@@ -27,17 +28,26 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 
-# def see_json_data(file_path):
+camera_interfaces = {
+    0 : CameraRedisSubInterface(camera_id=0),
+    1 : CameraRedisSubInterface(camera_id=1),
+    2 : CameraRedisSubInterface(camera_id=2),
+}
+for id in camera_interfaces.keys():
+    camera_interfaces[id].start()
+
+################# TEST MULTI ENV ####################
+env = RealRobotEnvMulti(
+    controller_type="OSC_POSE",
+)
+skill_selection_vec = np.zeros(env.skill.num_skills)
+skill_selection_vec[0] = 1
+params = [0.5, 0.0, 0.2]
+action = np.concatenate([skill_selection_vec, params])
+obs, reward, done, info = env.step(action)
+
 
 ################## TEST Z DISCRETIZATION #####################
-# camera_interfaces = {
-#     0 : CameraRedisSubInterface(camera_id=0),
-#     1 : CameraRedisSubInterface(camera_id=1),
-#     2 : CameraRedisSubInterface(camera_id=2),
-# }
-# for id in camera_interfaces.keys():
-#     camera_interfaces[id].start()
-
 # # get world xy from top down view
 # detection_utils = DetectionUtils()
 # pix = (158., 315.)
@@ -47,73 +57,51 @@ import matplotlib.ticker as plticker
 # camera_id = 1
 # detection_utils.get_points_on_z(world_xy=world_xy, camera_interface=camera_interfaces[camera_id], camera_id=camera_id, max_height=0.3)
 
+############### TEST EEG SIDE DETECTION UTILS #################
+# detection_utils = DetectionUtils()
+# img0 = get_camera_image(camera_interface=camera_interfaces[0])
+# img1 = get_camera_image(camera_interface=camera_interfaces[1])
 
-############### TEST TOPDOWN CAMERA XY PROJECTION #################
-camera_interfaces = {
-    0 : CameraRedisSubInterface(camera_id=0),
-    1 : CameraRedisSubInterface(camera_id=1),
-    2 : CameraRedisSubInterface(camera_id=2),
-}
-for id in camera_interfaces.keys():
-    camera_interfaces[id].start()
+# trim_low = [90, 130]
+# trim_high = [450, 370]
+# img2 = get_camera_image(camera_interface=camera_interfaces[2])
+# img2 = img2[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
 
-# get world xy from top down view
-detection_utils = DetectionUtils()
-# pix = (335., 36.)
-# world_xy = detection_utils.get_world_xy_from_topdown_view(pix, camera_interfaces[2], trim=True)
-# print(world_xy)
-img0 = get_camera_image(camera_interface=camera_interfaces[0])
-img1 = get_camera_image(camera_interface=camera_interfaces[1])
+# pix0 = detection_utils.get_obj_pixel_coord(
+#     img_array=img0,
+#     texts=["red mug"],
+#     save_filename="testing",
+# )
+# breakpoint()
 
-trim_low = [90, 130]
-trim_high = [450, 370]
-img2 = get_camera_image(camera_interface=camera_interfaces[2])
-img2 = img2[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
+# pix1 = detection_utils.get_obj_pixel_coord(
+#     img_array=img1,
+#     texts=["red mug"],
+#     save_filename="testing",
+# )
+# breakpoint()
 
-pix0 = detection_utils.get_obj_pixel_coord(
-    img_array=img0,
-    texts=["red mug"],
-    save_filename="testing",
-)
-breakpoint()
+# pix2 = detection_utils.get_obj_pixel_coord(
+#     img_array=img2,
+#     texts=["red mug"],
+#     save_filename="testing",
+# )
+# breakpoint()
 
-pix1 = detection_utils.get_obj_pixel_coord(
-    img_array=img1,
-    texts=["red mug"],
-    save_filename="testing",
-)
-breakpoint()
+# world = detection_utils.get_object_world_coords(
+#     cam0_img=img0,
+#     cam1_img=img1,
+#     texts=["red mug"],
+# )
+# breakpoint()
 
-pix2 = detection_utils.get_obj_pixel_coord(
-    img_array=img2,
-    texts=["red mug"],
-    save_filename="testing",
-)
-breakpoint()
+# xy = detection_utils.get_world_xy_from_topdown_view(
+#     pix_coords=(11.0, 35.0),
+#     img_array=img2,
+# )
+# breakpoint()
 
-world = detection_utils.get_object_world_coords(
-    cam0_img=img0,
-    cam1_img=img1,
-    texts=["red mug"],
-)
-breakpoint()
-
-xy = detection_utils.get_world_xy_from_topdown_view(
-    pix_coords=(11.0, 35.0),
-    img_array=img2,
-)
-
-breakpoint()
 ################### CAMERA TEST ########################
-# setup camera interfaces - TODO add cam2 and cam3
-# camera_interfaces = {
-#     0 : CameraRedisSubInterface(camera_id=0),
-#     1 : CameraRedisSubInterface(camera_id=1),
-#     2 : CameraRedisSubInterface(camera_id=2),
-# }
-# for id in camera_interfaces.keys():
-#     camera_interfaces[id].start()
-
 # while True:
 #     raw_image = get_camera_image(camera_interfaces[2])
 #     rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb

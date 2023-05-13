@@ -5,6 +5,7 @@ import socket
 import selectors
 import traceback
 import numpy as np
+import cv2
 
 from client_message import ClientMessage
 sel = selectors.DefaultSelector()
@@ -36,6 +37,9 @@ def start_connection(host, port, request):
 
 host = "127.0.0.1"
 port = 5000
+img0 = cv2.imread("sample_images/camera0.png")
+img1 = cv2.imread("sample_images/camera1.png")
+img2 = cv2.imread("sample_images/camera2.png")
 
 while True:
     print("\n")
@@ -44,15 +48,16 @@ while True:
         "type" : "pickle",
         "encoding" : "utf-8",
         "content" : {
-            # "img1" : np.ones((480,640,3))*10,
-            # "img2" : np.ones((480,640,3))*20,
+            "img0" : img0,
+            "img1" : img1,
+            "img2" : img2,
             # "img3" : np.ones((480,640,3))*30,
             # "img4" : np.ones((480,640,3))*40,
             # "img5" : np.ones((480,640,3))*50,
             # "img6" : np.ones((480,640,3))*60,
-            "img1" : np.zeros((2,2,3)),
-            "img2" : np.zeros((2,2,3)),
-            "img3" : np.zeros((2,2,3)),
+            # "img1" : np.zeros((2,2,3)),
+            # "img2" : np.zeros((2,2,3)),
+            # "img3" : np.zeros((2,2,3)),
         },
     }
     # request = create_request(action="search", value=values[idx])

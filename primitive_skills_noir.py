@@ -140,6 +140,7 @@ class PrimitiveSkill:
                 "num_params" : 3,
                 "skill" : self._pour_from_side,
                 "default_idx" : 10,
+
             },
             "reset_joints" : {
                 "num_params" : 0,
@@ -199,9 +200,12 @@ class PrimitiveSkill:
         # get the skill to execute
         skill_idx = np.argmax(action[:self.num_skills])
         skill = self.skills[self.idx2skill[skill_idx]]["skill"] 
-        
+        skill_name = self.skills[self.idx2skill[skill_idx]]
+
         # extract params and execute
         params = action[self.num_skills:]
+        print(f"Executing skill {skill_name} with params {params}")
+
         skill(params)
 
     def _execute_sequence(self, sequence):
@@ -698,17 +702,29 @@ class PrimitiveSkill:
         last_gripper_width = self.robot_interface.last_gripper_q
         return 1 if last_gripper_width < thresh else -1
 
+    # def _check_for_interrupt(self):
+    #     """
+    #     Check if human interrupt is received and valid
+    #     """
+    #     # TODO - replace this with actual signal
+    #     if self.allow_interrupt:
+    #         interrupt_signal = self.r.get(self.INTERRUPT_KEY).decode()
+    #         if interrupt_signal == "False":
+    #             self.interrupt = False
+    #         elif interrupt_signal == "True":
+    #             self.interrupt = True
+    #             self.allow_interrupt = False
+    #             print("rcvd interrupt", self.interrupt)
+
     def _check_for_interrupt(self):
         """
         Check if human interrupt is received and valid
         """
         # TODO - replace this with actual signal
+        from flask_client import check_interrupt
         if self.allow_interrupt:
-            interrupt_signal = self.r.get(self.INTERRUPT_KEY).decode()
-            if interrupt_signal == "False":
-                self.interrupt = False
-            elif interrupt_signal == "True":
-                self.interrupt = True
+            self.interrupt = check_interrupt()
+            if self.interrupt:
                 self.allow_interrupt = False
                 print("rcvd interrupt", self.interrupt)
 

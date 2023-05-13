@@ -142,7 +142,7 @@ class RealRobotEnvMulti(gym.Env):
         self.current_infos = {}
         return obs
 
-    def get_image_observations(self, action, save_images=False):
+    def get_image_observations(self, action, img_as_list=False, save_images=False):
         """
         Takes images for object selection and parameter selection, and uploads them to server
         """
@@ -169,13 +169,22 @@ class RealRobotEnvMulti(gym.Env):
         # move back to original position
         self._move_back_in_view()
 
-        data = {
-            "obj_image0" : obj_image0,
-            "obj_image1" : obj_image1,
-            "param_image0" : param_image0,
-            "param_image1" : param_image1,
-            "param_image2" : param_image2,
-        }
+        if img_as_list:
+            data = {
+                "obj_image0" : obj_image0.tolist(),
+                # "obj_image1" : obj_image1.tolist(),
+                "param_image0" : param_image0.tolist(),
+                # "param_image1" : param_image1.tolist(),
+                "param_image2" : param_image2.tolist(),
+            }
+        else:
+            data = {
+                "obj_image0" : obj_image0,
+                # "obj_image1" : obj_image1,
+                "param_image0" : param_image0,
+                # "param_image1" : param_image1,
+                "param_image2" : param_image2,
+            }
 
         return data
 

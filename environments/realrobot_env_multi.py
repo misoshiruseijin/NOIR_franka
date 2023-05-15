@@ -158,6 +158,9 @@ class RealRobotEnvMulti(gym.Env):
         param_image0 = get_camera_image(self.camera_interfaces[0])
         param_image1 = get_camera_image(self.camera_interfaces[1])
         param_image2 = get_camera_image(self.camera_interfaces[2])
+        trim_low = [90, 130]
+        trim_high = [450, 370]
+        param_image2 = param_image2[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
 
         if save_images:
             cv2.imwrite("obj_selection_img0.png", obj_image0)

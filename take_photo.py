@@ -14,12 +14,20 @@ camera_interfaces = {
     }
 
 time.sleep(0.5)
-    
+
+
+# range to trim camera image 2
+trim_low = [90, 130]
+trim_high = [450, 370]
+
 def take_photos(prefix):
     for i in range(len(camera_interfaces)):
         camera_interface = camera_interfaces[i]
         raw_image = get_camera_image(camera_interface)
         rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
+        # trim camera 2 images
+        if i == 2:
+            rgb_image = rgb_image[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
         image = Image.fromarray(np.uint8(rgb_image))
         image.save(f"photos/{prefix}_camera{i}.png")
 

@@ -16,7 +16,6 @@ from deoxys.utils.input_utils import input2action
 from deoxys.utils.log_utils import get_deoxys_example_logger
 import utils.transformation_utils as U
 
-import pdb
 import redis
 
 logger = get_deoxys_example_logger()
@@ -44,6 +43,7 @@ class PrimitiveSkill:
         waypoint_height=0.25,
         workspace_limits=None,
         idx2skill=None,
+        enable_eeg_interrupt=False,
         ):
 
         """
@@ -187,9 +187,11 @@ class PrimitiveSkill:
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0)
 
         # TODO remove this after testing
-        self.r = redis.Redis()
-        self.INTERRUPT_KEY = "interrupt"
-        self.r.set(self.INTERRUPT_KEY, "False")
+        # self.r = redis.Redis()
+        # self.INTERRUPT_KEY = "interrupt"
+        # self.r.set(self.INTERRUPT_KEY, "False")
+
+        self.enable_eeg_interrupt = enable_eeg_interrupt # whether to enable interrupt using signal from eeg server
 
     def execute_skill(self, action):
         """
@@ -216,14 +218,14 @@ class PrimitiveSkill:
             sequence (list of lists) : [ [skill name 1, param 1], [skill name 2, param 2], ...]
         """
         # make sure the interrupt signal received before skill execution begins is ignored
-        self.r.set(self.INTERRUPT_KEY, "False") # TODO remove or replace 
+        # self.r.set(self.INTERRUPT_KEY, "False") # TODO remove or replace 
         print("======= starting skill execution ======")
         for item in sequence:
             # TODO - test this            
             # if human interrupts, stop execution and rehome
             if self.interrupt:
                 self.interrupt = False
-                self.r.set(self.INTERRUPT_KEY, "False") # TODO remove or replace
+                # self.r.set(self.INTERRUPT_KEY, "False") # TODO remove or replace
                 gripper_action = self._get_gripper_state() # get the current gripper state
                 print("-------- Human Interrupt. Rehoming -----------")
                 # self._rehome(np.concatenate([self.rehome_pos, self.rehome_quat, [gripper_action, 1]]))
@@ -720,9 +722,10 @@ class PrimitiveSkill:
         """
         Check if human interrupt is received and valid
         """
-        # TODO - replace this with actual signal
-        from flask_client import check_interrupt
+        if not self.enable_eeg_interrupt:
+            return
         if self.allow_interrupt:
+            from flask_client import check_interrupt
             self.interrupt = check_interrupt()
             if self.interrupt:
                 self.allow_interrupt = False
@@ -732,6 +735,7 @@ class PrimitiveSkill:
     Param unnormalization and Motion Interpolation functions
     """
     def unnormalize_params(self, action): # TODO add case for push 1d's
+        # NOTE not used. All params are raw values in NOIR
         """
         Unnormalizes parameters from [-1, 1] to raw values
 

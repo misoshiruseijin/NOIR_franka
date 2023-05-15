@@ -19,14 +19,14 @@ import utils.transformation_utils as T
 from utils.detection_utils import DetectionUtils
 # from utils.detection_utils_eeg import DetectionUtils
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 import cv2
 import pdb
 from getkey import getkey
 
 import json
-import matplotlib.pyplot as plt
-import matplotlib.ticker as plticker
+
+import tkinter as tk
 
 camera_interfaces = {
     0 : CameraRedisSubInterface(camera_id=0),

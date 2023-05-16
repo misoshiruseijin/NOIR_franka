@@ -5,10 +5,6 @@ import time
 import argparse
 import json
 
-sys.path.append("..")
-sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
-from primitive_skills_noir import PrimitiveSkill
-from environments.realrobot_env_multi import RealRobotEnvMulti
 import tkinter as tk
 from PIL import Image, ImageTk
 import numpy as np
@@ -17,8 +13,6 @@ from utils.detection_utils_eeg import DetectionUtils
 
 from PIL import Image, ImageDraw
 import cv2
-import pdb
-from getkey import getkey
 import json
 
 

@@ -1,0 +1,51 @@
+ {
+    "pick_from_top" : {
+        "num_params" : 3,
+        "default_idx" : 0
+    },
+    "pick_from_side" : {
+        "num_params" : 3,
+        "default_idx" : 1
+    },
+    "place_from_top" : {
+        "num_params" : 3,
+        "default_idx" : 2
+    },
+    "place_from_side" : {
+        "num_params" : 3,
+        "default_idx" : 3
+    },
+    "push_xy" : {
+        "num_params" : 6,
+        "default_idx" : 4
+    },
+    "push_z" : {
+        "num_params" : 5,
+        "default_idx" : 5
+    },
+    "wipe_xy" : {
+        "num_params" : 6,
+        "default_idx" : 6
+    },
+    "draw_x" : {
+        "num_params" : 3,
+        "default_idx" : 7
+    },
+    "screw" : {
+        "num_params" : 4,
+        "default_idx" : 8
+    },
+    "pour_from_top" : {
+        "num_params" : 3,
+        "default_idx" : 9
+    },
+    "pour_from_side" : {
+        "num_params" : 3,
+        "default_idx" : 10
+
+    },
+    "reset_joints" : {
+        "num_params" : 0,
+        "default_idx" : 11
+    }
+}

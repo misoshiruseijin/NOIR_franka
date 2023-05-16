@@ -175,17 +175,17 @@ class RealRobotEnvMulti(gym.Env):
         if img_as_list:
             data = {
                 "obj_image0" : obj_image0.tolist(),
-                # "obj_image1" : obj_image1.tolist(),
+                "obj_image1" : obj_image1.tolist(),
                 "param_image0" : param_image0.tolist(),
-                # "param_image1" : param_image1.tolist(),
+                "param_image1" : param_image1.tolist(),
                 "param_image2" : param_image2.tolist(),
             }
         else:
             data = {
                 "obj_image0" : obj_image0,
-                # "obj_image1" : obj_image1,
+                "obj_image1" : obj_image1,
                 "param_image0" : param_image0,
-                # "param_image1" : param_image1,
+                "param_image1" : param_image1,
                 "param_image2" : param_image2,
             }
 

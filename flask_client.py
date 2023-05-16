@@ -129,7 +129,6 @@ def main():
 
 
     ###### No Resend Image Case #####
-    print("HERE")
     while True:
         # get new skill + parmeters
         action = send_images(img_data)["action"]

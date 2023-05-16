@@ -546,13 +546,15 @@ class PrimitiveSkill:
 
         self._execute_sequence(sequence)
 
-    def _reset_joints(self, params):
+    def _reset_joints(self, params=None):
         """
         Resets joints to fixed position.
 
         Args:
             params (8-tuple of floats) : [reset joint positions, gripper_action]
         """
+        if params is None:
+            params = np.concatenate([self.reset_joint_positions, -1.0])
         reset_joint_positions = params[:8]
         reset_joints_to_custom(self.robot_interface, reset_joint_positions)   
 

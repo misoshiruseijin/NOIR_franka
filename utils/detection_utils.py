@@ -40,7 +40,6 @@ class DetectionUtils:
                 [0.58267162, -0.31841734],
             ]
         }
-        self.top_down_corr = {}
         self.get_linear_mapping_coeff(top_down_corr=self.top_down_corr)
 
 

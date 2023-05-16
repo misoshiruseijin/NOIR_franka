@@ -10,10 +10,10 @@
         "none" : ["place_from_top", "place_from_side", "wipe_xy", "reset_joints"]
     },
     "MealPrep" : {
-        "white handle on lid" : ["pick_from_top", "pick_from_side", "push_xy"],
+        "navy handle" : ["pick_from_top", "pick_from_side", "push_xy"],
         "tomato slice" : ["pick_from_top", "pick_from_side", "push_xy"],
         "lettuce" : ["pick_from_top", "pick_from_side", "push_xy"],
-        "bread" : [],
+        "bread" : ["pick_from_top", "pick_from_side", "push_xy"],
         "none" : ["place_from_top", "place_from_side", "push_z", "reset_joints"]
     },
     "Tea" : {

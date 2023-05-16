@@ -11,33 +11,33 @@ camera_interfaces = {
     }
 
 detection_utils = DetectionUtils()
-# texts = ["brown cow toy", "banana toy", "beize tea cup"]
-# for i in range(2):
-#     coords = detection_utils.get_obj_pixel_coord(
-#         camera_interface=camera_interfaces[i],
-#         camera_id=i,
-#         texts=texts,
-#         thresholds=[0.001] * len(texts),
-#         save_img=True,
-#         n_instances=1
-#     )
-#     print(f"Coords in camera {i}")
-#     print(coords)
-
-while True:
-    start_time = time.time()
-
+texts = ["bread", "tomatoes", "lettuce", "light brown handle"]
+for i in range(2):
     coords = detection_utils.get_obj_pixel_coord(
-        camera_interface=camera_interfaces[0],
-        camera_id=0,
-        texts=["red bowl", "light blue bowl", "shiny silver cup", "green handle"],
-        thresholds=[0.001]*4,
-        save_img=False,
-        n_instances=1,
+        camera_interface=camera_interfaces[i],
+        camera_id=i,
+        texts=texts,
+        thresholds=[0.001] * len(texts),
+        save_img=True,
+        n_instances=1
     )
-    end_time = time.time()
-    print("time this iter", end_time-start_time)
-    # print(coords)
+    print(f"Coords in camera {i}")
+    print(coords)
+
+# while True:
+#     start_time = time.time()
+
+#     coords = detection_utils.get_obj_pixel_coord(
+#         camera_interface=camera_interfaces[0],
+#         camera_id=0,
+#         texts=["red bowl", "light blue bowl", "shiny silver cup", "green handle"],
+#         thresholds=[0.001]*4,
+#         save_img=False,
+#         n_instances=1,
+#     )
+#     end_time = time.time()
+#     print("time this iter", end_time-start_time)
+#     # print(coords)
 
 # from PIL import Image, ImageDraw, ImageFont
 # import torch

@@ -1,8 +1,8 @@
 {
     "TableSetting" : {
-        "light blue bowl" : ["pick_from_top", "pick_from_side", "push_xy"],
-        "shiny silver cup" : ["pick_from_top", "pick_from_side", "push_xy"],
-        "green handle" : ["pick_from_top", "pick_from_side", "push_xy"],
+        "light blue bowl" : ["pick_from_top", "pick_from_side", "push_x"],
+        "shiny silver cup" : ["pick_from_top", "pick_from_side", "push_x"],
+        "green handle" : ["pick_from_top", "pick_from_side", "push_x"],
         "none" : ["place_from_top", "place_from_side", "reset_joints"]
     },
     "Whiteboard" : {
@@ -45,8 +45,8 @@
         "none" : []
     },
     "Tofu" : {
-        "blue knife handle" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none_tofu" : ["place_from_top", "push_xy", "push_z", "reset_joints"]
+        "pink knife handle" : ["pick_from_top", "pick_from_side", "push_x"],
+        "none" : ["place_from_top", "push_x", "push_z", "reset_joints"]
     },
     "Tictactoe" : {
         "dry erase marker" : [],

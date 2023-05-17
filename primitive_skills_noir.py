@@ -79,7 +79,7 @@ class PrimitiveSkill:
             self.workspace_limits = workspace_limits
         else: 
             self.workspace_limits = {
-                "x" : (0.3, 0.65),
+                "x" : (0.3, 0.7),
                 "y" : (-0.30, 0.25),
                 "z" : (0.0, 0.25)
             }
@@ -107,12 +107,12 @@ class PrimitiveSkill:
                 "default_idx" : 3,
             },
             "push_x" : {
-                "num_params" : 6,
+                "num_params" : 3,
                 "skill" : self._push_x,
                 "default_idx" : 4,
             },
             "push_z" : {
-                "num_params" : 5,
+                "num_params" : 3,
                 "skill" : self._push_z,
                 "default_idx" : 5,
             },
@@ -303,7 +303,7 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [1, 1]]) ], # to place pos
             [ "gripper_action", [-1] ], # release gripper
             [ "move_to", np.concatenate([waypoint, self.from_top_quat, [-1, 0]]) ], # to waypoint
-            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],
         ]
         self._execute_sequence(sequence)
@@ -324,42 +324,67 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([waypoint, self.from_side_quat, [1, 1]]) ], # to waypoint
             [ "move_to", np.concatenate([goal_pos, self.from_side_quat, [1, 1]]) ], # to place pos
             [ "gripper_action", [-1] ], # release gripper
-            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],
         ]
         self._execute_sequence(sequence)
-
+    
     def _push_z(self, params):
         """
-        Start from specified position with gripper pointing down, pushes in z direction by some delta, then rehomes
+        Start from specified position with gripper pointing down, pushes in z direction until end_z, then rehomes
 
         Args: 
-            params (5-tuple of floats) : [start_pos, dz, yaw_angle[deg]]
+            params (2-tuple of floats) : [start_pos(xy), end_z]
         """
 
-        start_pos = params[:3]
-        dz = params[3]
-        yaw = params[4]
+        start_pos = [params[0], params[1], self.waypoint_height]
         gripper_action = 1 # gripper is closed
 
-        goal_pos = [start_pos[0], start_pos[1], start_pos[2] + dz]
+        goal_pos = [start_pos[0], start_pos[1], params[2]]
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
-        # convert euler to quat
-        from_top_euler = U.quat2euler(self.from_top_quat)
-        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.euler2quat(goal_euler)
-
         sequence = [
-            [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 1]]) ], # to start pos
-            [ "move_to", np.concatenate([goal_pos, goal_quat, [gripper_action, 1]]) ], # move in z by dz
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [gripper_action, 1]]) ], # move in z by dz
             [ "pause", [gripper_action, 1.0] ], # pause for 1 sec
-            [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],
         ]
         self._execute_sequence(sequence)
+
+    # def _push_z(self, params):
+    #     """
+    #     Start from specified position with gripper pointing down, pushes in z direction by some delta, then rehomes
+
+    #     Args: 
+    #         params (5-tuple of floats) : [start_pos, dz, yaw_angle[deg]]
+    #     """
+
+    #     start_pos = params[:3]
+    #     dz = params[3]
+    #     yaw = params[4]
+    #     gripper_action = 1 # gripper is closed
+
+    #     goal_pos = [start_pos[0], start_pos[1], start_pos[2] + dz]
+    #     waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+    #     self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+    #     # convert euler to quat
+    #     from_top_euler = U.quat2euler(self.from_top_quat)
+    #     goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+    #     goal_quat = U.euler2quat(goal_euler)
+
+    #     sequence = [
+    #         [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 1]]) ], # to start pos
+    #         [ "move_to", np.concatenate([goal_pos, goal_quat, [gripper_action, 1]]) ], # move in z by dz
+    #         [ "pause", [gripper_action, 1.0] ], # pause for 1 sec
+    #         [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
+    #         [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+    #         [ "rehome", self.rehome_q ],
+    #     ]
+    #     self._execute_sequence(sequence)
 
     def _push_xy(self, params):
         """

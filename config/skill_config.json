@@ -1,51 +1,63 @@
  {
     "pick_from_top" : {
         "num_params" : 3,
-        "default_idx" : 0
+        "default_idx" : 0,
+        "params" : ["xy", "z"]
     },
     "pick_from_side" : {
         "num_params" : 3,
-        "default_idx" : 1
+        "default_idx" : 1,
+        "params" : ["xy", "z"]
     },
     "place_from_top" : {
         "num_params" : 3,
-        "default_idx" : 2
+        "default_idx" : 2,
+        "params" : ["xy", "z"]
     },
     "place_from_side" : {
         "num_params" : 3,
-        "default_idx" : 3
+        "default_idx" : 3,
+        "params" : ["xy", "z"]
     },
-    "push_xy" : {
-        "num_params" : 6,
-        "default_idx" : 4
+    "push_x" : {
+        "num_params" : 3,
+        "default_idx" : 4,
+        "params" : ["xy", "z"]
     },
     "push_z" : {
-        "num_params" : 5,
-        "default_idx" : 5
+        "num_params" : 3,
+        "default_idx" : 5,
+        "params" : ["xy", "z"],
+        "notes" : "z is the final z position"
     },
     "wipe_xy" : {
         "num_params" : 6,
-        "default_idx" : 6
+        "default_idx" : 6,
+        "params" : ["xy", "z", "dx", "dy", "yaw"]
     },
     "draw_x" : {
         "num_params" : 3,
-        "default_idx" : 7
+        "default_idx" : 7,
+        "params" : ["xy", "z"]
     },
     "screw" : {
         "num_params" : 4,
-        "default_idx" : 8
+        "default_idx" : 8,
+        "params" : ["xy", "z", "yaw"]
     },
     "pour_from_top" : {
         "num_params" : 3,
-        "default_idx" : 9
+        "default_idx" : 9,
+        "params" : ["xy", "z"]
     },
     "pour_from_side" : {
         "num_params" : 3,
-        "default_idx" : 10
-
+        "default_idx" : 10,
+        "params" : ["xy", "z"]
     },
     "reset_joints" : {
         "num_params" : 0,
-        "default_idx" : 11
+        "default_idx" : 11,
+        "params" : []
     }
 }

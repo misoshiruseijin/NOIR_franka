@@ -143,7 +143,7 @@ class RealRobotEnvMulti(gym.Env):
         self.current_infos = {}
         return obs
 
-    def get_image_observations(self, action, img_as_list=False, save_images=False):
+    def get_image_observations(self, action=None, img_as_list=False, save_images=False):
         """
         Takes images for object selection and parameter selection, and uploads them to server
         """
@@ -153,6 +153,8 @@ class RealRobotEnvMulti(gym.Env):
         obj_image1 = get_camera_image(self.camera_interfaces[1])
 
         # move robot out of camera view
+        if action is None:
+            action = np.zeros(self.num_skills)
         self._move_out_of_way(action)
 
         # take images for parameter selection (image 2 for x and y, image 0 or 1 for z)

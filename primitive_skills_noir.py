@@ -603,9 +603,19 @@ class PrimitiveSkill:
         Args:
             params (8-tuple of floats) : [reset joint positions, gripper_action]
         """
-        if params is None:
-            params = np.concatenate([self.reset_joint_positions, -1.0])
-        reset_joint_positions = params[:8]
+        no_param = False
+        if isinstance(params, list):
+            if len(params) == 0:
+                no_param = True
+        elif isinstance(params, np.ndarray):
+            if params.shape[0] == 0:
+                no_param = True
+        if params is None or no_param:
+            reset_joint_positions = np.append(self.reset_joint_positions["from_top"], -1.0)
+            print("HERE!")
+        else:
+            reset_joint_positions = params[:8]
+        print("reset joint pos", reset_joint_positions)
         reset_joints_to_custom(self.robot_interface, reset_joint_positions)   
 
     """

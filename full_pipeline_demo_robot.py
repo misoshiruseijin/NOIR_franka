@@ -114,44 +114,45 @@ class FullPipelineDemo:
         param_names = self.skill_dict[skill_name]["params"]
         params = []
 
-        ############### choose x and y ################
-        # Setup Tkinter window and canvas with topdown view (cam 2 for param selection) - TODO Replace this block with cursor control
-        self.window = tk.Tk()
-        self.canvas = tk.Canvas(self.window, width=topdown_pil_image.width, height=topdown_pil_image.height)
-        self.canvas.pack()
-        photo = ImageTk.PhotoImage(topdown_pil_image)
-        self.canvas.create_image(0, 0, image=photo, anchor=tk.NW)
-        self.canvas.bind("<Button 1>", self.get_pixel_position) # bind mouseclick event to canvas
-        self.window.mainloop() # start Tkinter event loop
+        if "xy" in param_names:
+            ############### choose x and y ################
+            # Setup Tkinter window and canvas with topdown view (cam 2 for param selection) - TODO Replace this block with cursor control
+            self.window = tk.Tk()
+            self.canvas = tk.Canvas(self.window, width=topdown_pil_image.width, height=topdown_pil_image.height)
+            self.canvas.pack()
+            photo = ImageTk.PhotoImage(topdown_pil_image)
+            self.canvas.create_image(0, 0, image=photo, anchor=tk.NW)
+            self.canvas.bind("<Button 1>", self.get_pixel_position) # bind mouseclick event to canvas
+            self.window.mainloop() # start Tkinter event loop
 
-        # get xy world position from pixel position
-        world_xy = self.detection_utils.get_world_xy_from_topdown_view(pix_coords=self.pix_pos, img_array=topdown_img)
-        
-        ############### choose z ###############
-        # discretize z coordinate and save image visualizing the discrete points
-        pix_pts, world_pts = self.detection_utils.get_points_on_z(world_xy=world_xy, img_array=sideview_img, camera_id=side_camera_id, max_height=0.3)
-        
-        projection_img = cv2.imread("projections.png")
-        projection_pil_img = Image.fromarray(projection_img[:,:,::-1])
+            # get xy world position from pixel position
+            world_xy = self.detection_utils.get_world_xy_from_topdown_view(pix_coords=self.pix_pos, img_array=topdown_img)
+            params.append(world_xy[0])
+            params.append(world_xy[1])
 
-        # Setup Tkinter window and canvas with side view (cam 0 for param selection) - TODO Replace this block with cursor control
-        self.window = tk.Tk()
-        self.canvas = tk.Canvas(self.window, width=projection_pil_img.width, height=projection_pil_img.height)
-        self.canvas.pack()
-        photo = ImageTk.PhotoImage(projection_pil_img)
-        self.canvas.create_image(0, 0, image=photo, anchor=tk.NW)
-        self.canvas.bind("<Button 1>", self.get_pixel_position)
-        self.window.mainloop()
+            if "z" in param_names:
+                ############### choose z ###############
+                # discretize z coordinate and save image visualizing the discrete points
+                pix_pts, world_pts = self.detection_utils.get_points_on_z(world_xy=world_xy, img_array=sideview_img, camera_id=side_camera_id, max_height=0.3)
+                
+                projection_img = cv2.imread("projections.png")
+                projection_pil_img = Image.fromarray(projection_img[:,:,::-1])
 
-        # find the point in the discrete pixel points closest to clicked point
-        selected_pix_pos = np.array([self.pix_pos[1], self.pix_pos[0]])
-        idx = np.argmin(np.linalg.norm(pix_pts - selected_pix_pos, axis=1))
-        world_z = world_pts[idx][2]
+                # Setup Tkinter window and canvas with side view (cam 0 for param selection) - TODO Replace this block with cursor control
+                self.window = tk.Tk()
+                self.canvas = tk.Canvas(self.window, width=projection_pil_img.width, height=projection_pil_img.height)
+                self.canvas.pack()
+                photo = ImageTk.PhotoImage(projection_pil_img)
+                self.canvas.create_image(0, 0, image=photo, anchor=tk.NW)
+                self.canvas.bind("<Button 1>", self.get_pixel_position)
+                self.window.mainloop()
 
-        # execute pick
-        params = [world_xy[0], world_xy[1], world_z]
-        print("selected world coordinates", params)
-        
+                # find the point in the discrete pixel points closest to clicked point
+                selected_pix_pos = np.array([self.pix_pos[1], self.pix_pos[0]])
+                idx = np.argmin(np.linalg.norm(pix_pts - selected_pix_pos, axis=1))
+                world_z = world_pts[idx][2]
+                params.append(world_z)
+
         return params
 
     def get_pixel_position(self, event):

@@ -199,12 +199,15 @@ class RealRobotEnvMulti(gym.Env):
         Move the robot out of camera view (joint position depends on which skill was called)
         """
         # save current joint configuration
-        self.reset_q = np.append(self.robot_interface.last_q, self.skill._get_gripper_state())
+        # self.reset_q = np.append(self.robot_interface.last_q, self.skill._get_gripper_state())
 
         skill_idx = np.argmax(action[:self.skill.num_skills])
         skill_name = self.skill.idx2skill[skill_idx]
         gripper_state = self.skill._get_gripper_state()
+        self.reset_q = np.append(self.skill.reset_joint_positions["from_top"], gripper_state)
+
         if skill_name in ["pick_from_side", "pour_from_side"]:
+            self.reset_q = np.append(self.skill.reset_joint_positions["from_side"], gripper_state)
             out_of_way_q = self.skill.reset_joint_positions["out_of_way_side"]
         else:
             out_of_way_q = self.skill.reset_joint_positions["out_of_way_top"]

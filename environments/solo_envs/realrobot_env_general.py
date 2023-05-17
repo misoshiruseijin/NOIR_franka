@@ -96,7 +96,7 @@ class RealRobotEnvGeneral(gym.Env):
         )
 
         self.num_skills = self.skill.num_skills
-
+        self.skill._reset_joints(np.append(self.skill.reset_joint_positions["from_top"], -1.0))
         self.get_object_pos() # get object positions to make sure visualization is updated
 
     def reward(self): # placeholder. not used
@@ -159,7 +159,10 @@ class RealRobotEnvGeneral(gym.Env):
         Reset robot to home joint configuration and returns observation
         """
         self._reset_internal()
-        reset_joints_to(self.robot_interface, self.skill.reset_joint_positions)
+        # breakpoint()
+        # reset_joints_to(self.robot_interface, self.skill.reset_joint_positions)
+        self.skill._reset_joints(np.append(self.skill.reset_joint_positions["from_top"], -1.0))
+
         time.sleep(0.5)
         obs = self._get_current_robot_state()
         obj_pos = self.get_object_pos()

@@ -1,10 +1,5 @@
 {
     "TableSetting" : {
-        "red bowl" : {
-            "place_ref" : "world",
-            "pick_from_top": [0.0, 0.05, 0.02],
-            "place_from_top" : [0.45, 0.07, 0.04]
-        }, 
         "light blue bowl" : {
             "place_ref" : "world",
             "pick_from_top": [0.0, 0.02, 0.02],

@@ -37,12 +37,25 @@ for id in camera_interfaces.keys():
     camera_interfaces[id].start()
 
 ################# TEST MULTI ENV ####################
-env = RealRobotEnvMulti(
-    controller_type="OSC_POSE",
+# env = RealRobotEnvMulti(
+#     controller_type="OSC_POSE",
+# )
+# skill_selection_vec = np.zeros(env.skill.num_skills)
+# skill_selection_vec[0] = 1
+# params = [0.4, 0.0, 0.1]
+# action = np.concatenate([skill_selection_vec, params])
+# obs, reward, done, info = env.step(action)
+
+
+################## TEST OBJ 3D POS ESTIMATE ######################
+env = RealRobotEnvGeneral(
+    env_name="Sweeping",
 )
-skill_selection_vec = np.zeros(env.skill.num_skills)
+obs = env.reset()
+handle_pos = obs["world_coords"]["red lego block"]
+skill_selection_vec = np.zeros(env.num_skills)
 skill_selection_vec[0] = 1
-params = [0.5, 0.0, 0.2]
+params = handle_pos
 action = np.concatenate([skill_selection_vec, params])
 obs, reward, done, info = env.step(action)
 

@@ -11,7 +11,7 @@ camera_interfaces = {
     }
 
 detection_utils = DetectionUtils()
-texts = ["bread", "tomatoes", "lettuce", "light brown handle"]
+texts = ["light brown wooden broom handle", "pink rabbit toy", "brown bear toy"]
 for i in range(2):
     coords = detection_utils.get_obj_pixel_coord(
         camera_interface=camera_interfaces[i],

@@ -79,9 +79,9 @@ class PrimitiveSkill:
             self.workspace_limits = workspace_limits
         else: 
             self.workspace_limits = {
-                "x" : (0.3, 0.55),
-                "y" : (-0.15, 0.25),
-                "z" : (0.03, 0.30)
+                "x" : (0.3, 0.65),
+                "y" : (-0.30, 0.25),
+                "z" : (0.0, 0.25)
             }
 
         # executable skills
@@ -106,9 +106,9 @@ class PrimitiveSkill:
                 "skill" : self._place_from_side,
                 "default_idx" : 3,
             },
-            "push_xy" : {
+            "push_x" : {
                 "num_params" : 6,
-                "skill" : self._push_xy,
+                "skill" : self._push_x,
                 "default_idx" : 4,
             },
             "push_z" : {
@@ -387,6 +387,31 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 1]]) ], # to start pos
             [ "move_to", np.concatenate([goal_pos, goal_quat, [gripper_action, 0]]) ], # move by delta
             [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],        
+        ]
+        self._execute_sequence(sequence)
+
+    def _push_x(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in x direction to the end of the workspace, then rehomes
+
+        Args: 
+            params (6-tuple of floats) : [start_pos]
+        """
+        start_pos = params[:3]
+        gripper_action = 1 # gripper is closed
+
+
+        goal_pos = [self.workspace_limits["x"][1], start_pos[1], start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "gripper_action", [1.] ], # close gripper
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [gripper_action, 0]]) ], # move by delta
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],        
         ]
@@ -705,6 +730,11 @@ class PrimitiveSkill:
         """
         last_gripper_width = self.robot_interface.last_gripper_q
         return 1 if last_gripper_width < thresh else -1
+
+    def _get_eef_pos(self,):
+        last_state = np.array(self.robot_interface.last_state.O_T_EE).reshape(4,4).T
+        eef_pos = last_state[:-1,-1]
+        return eef_pos
 
     # def _check_for_interrupt(self):
     #     """

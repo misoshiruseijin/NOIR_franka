@@ -7,7 +7,10 @@ from environments.realrobot_env_multi import RealRobotEnvMulti
 import requests
 import cv2
 import numpy as np
+import json
+import time
 
+# example image data to send
 img0 = cv2.imread("sample_images/camera0.png")
 img1 = cv2.imread("sample_images/camera1.png")
 img2 = cv2.imread("sample_images/camera2.png")
@@ -17,6 +20,21 @@ dummy_data_to_send = {
     "img1" : img1.tolist(),
     "img2" : img2.tolist(),
 }
+
+# hardcoded params
+pick_vec, place_vec = [0]*12, [0]*12
+pick_vec[0] = 1
+place_vec[2] = 1
+actions = [
+    pick_vec + [0.47116807, -0.09464132, 0.02], # pick bowl
+    place_vec + [0.48592121, 0.06346929, 0.04183363], # place bowl
+    pick_vec + [0.32698827, -0.09672487, 0.04459089], # pick cup
+    place_vec + [0.35086609, 0.17256692, 0.05520492], # place cup
+    pick_vec + [0.37522164, -0.24257553, 0.01533997], # pick spoon
+    place_vec + [0.42237265, -0.00106914, 0.07387539], # place spoon
+]
+
+
 
 SERVER_IP = '10.124.52.226' # EEG
 PORT = 5000
@@ -65,7 +83,7 @@ def check_skill_params_ready():
             print("params reset successfully")
         else:
             print("params not reset!!")
-        print("Received Code :", code)
+        # print("Received Code :", code)
         return code
     else:
         return None
@@ -73,30 +91,33 @@ def check_skill_params_ready():
 
 def main():
 
-    breakpoint()
-    # # initialize environments and gety initial observation
-    # env = RealRobotEnvMulti()
-    # dummy_action = np.zeros(env.skill.num_skills)
-    # # img_data = env.get_image_observations(dummy_action, img_as_list=True)
-
+    # breakpoint()
+    # initialize environments and gety initial observation
+    env = RealRobotEnvMulti()
+    env.reset()
+    action = np.zeros(env.skill.num_skills)
     # img_data = env.get_image_observations(dummy_action, img_as_list=True, save_images=True)
 
     ###### No Resend Image Case #####
     # send_images(dummy_data_to_send)
 
-    # while True:
-    #     # get new skill + parmeters
-    #     send_images(img_data)
+    while True:
+        # send_images(dummy_data_to_send)
+        # get new images and send 
+        img_data = env.get_image_observations(action, img_as_list=True, save_images=True)
+        img_data["env_name"] = "TableSetting"
+        send_images(img_data)
 
-    #     # get params
-    #     action = None
-    #     while action is None:
-    #         action = check_skill_params_ready()
-    #         print("skill and params", action)
+        # get params
+        action = None
+        while action is None:
+            action = check_skill_params_ready()
+            print("No action received")
+            time.sleep(1)
         
-    #     # take action
-    #     obs, reward, done, info = env.step(action)
-    #     img_data = env.get_image_observations(action, img_as_list=True)
+        # take action
+        print("Action received. Executing ", action)
+        obs, reward, done, info = env.step(action)
 
 
 if __name__ == "__main__":

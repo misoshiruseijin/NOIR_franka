@@ -135,11 +135,11 @@ class RealRobotEnvMulti(gym.Env):
         # reset_joints_to(self.robot_interface, self.skill.reset_joint_positions)
         self.skill._reset_joints(np.append(self.skill.reset_joint_positions["from_top"], -1.0))
         time.sleep(0.5)
-        self._upload_obj_selection_images()
-        obs = self._receive_object_states()
+        # self._upload_obj_selection_images()
+        # obs = self._receive_object_states()
         robot_state = self._get_current_robot_state()
-        obs.update(robot_state)
-
+        # obs.update(robot_state)
+        obs = {}
         self.current_infos = {}
         return obs
 

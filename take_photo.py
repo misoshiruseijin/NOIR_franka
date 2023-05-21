@@ -20,16 +20,20 @@ time.sleep(0.5)
 trim_low = [90, 130]
 trim_high = [450, 370]
 
-def take_photos(prefix):
-    for i in range(len(camera_interfaces)):
-        camera_interface = camera_interfaces[i]
+def take_photos(prefix, camera_id):
+    if camera_id is None:
+        camera_ids = [0, 1, 2]
+    else:
+        camera_ids = [camera_id]
+    for id in camera_ids:
+        camera_interface = camera_interfaces[id]
         raw_image = get_camera_image(camera_interface)
         rgb_image = raw_image[:,:,::-1] # convert from bgr to rgb
         # trim camera 2 images
-        if i == 2:
+        if id == 2:
             rgb_image = rgb_image[trim_low[1]:trim_high[1], trim_low[0]:trim_high[0]]
         image = Image.fromarray(np.uint8(rgb_image))
-        image.save(f"photos/{prefix}_camera{i}.png")
+        image.save(f"photos/{prefix}_camera{id}.png")
 
 def stream(camera_id, trim=True):
     trim_low = [90, 130]
@@ -46,15 +50,16 @@ def stream(camera_id, trim=True):
 
 def main(args):
     if args.stream:
+        assert args.id is not None, "Specify id of camera to stream with --id flag"
         stream(camera_id=args.id)
     else:
-        take_photos(prefix=args.prefix)
+        take_photos(prefix=args.prefix, camera_id=args.id)
 
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--prefix", type=str, default="")
     parser.add_argument("--stream", action="store_true")
-    parser.add_argument("--id", type=int, default=0)
+    parser.add_argument("--id", type=int, default=None)
     args = parser.parse_args()
     main(args)

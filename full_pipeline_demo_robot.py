@@ -15,6 +15,8 @@ from environments.realrobot_env_multi import RealRobotEnvMulti
 from PIL import Image, ImageDraw
 import cv2
 import json
+import time
+import os
 
 
 class FullPipelineDemo:
@@ -22,6 +24,14 @@ class FullPipelineDemo:
         self,
         env_name,
     ):
+
+        """
+        Full pipeline demo without EEG or object detection.
+        Commandline input for object and skill selection, mouseclick input for param selection.
+
+        Args:
+            env_name (str) : name of environment. used to get correct objects
+        """
         self.pix_pos = None
         self.chose_xy = False
         self.chose_z = False
@@ -63,6 +73,8 @@ class FullPipelineDemo:
 
         # update img_obs
         self.img_obs = self.env.get_image_observations(action=action, save_images=True)
+
+        return obj_name, skill_name
 
     def get_obj_selection(self):
         """
@@ -163,15 +175,93 @@ class FullPipelineDemo:
         self.pix_pos = x,y
         self.window.destroy()
 
+def ask_for_task_state():
+    """
+    Ask for human input to determine if task is done and/or failed
+    """
+    yes_no = ["y", "n"]
+    done = False
+    failed = False
+    task_state = ""
+    while task_state not in yes_no:
+        task_state = input("Is task complete or in unrecoverable state? (y/n)\n")
+    if task_state == "n":
+        # task has not completed (or failed)
+        return done, failed
+    else:
+        done = True
+        task_state = ""
+        while task_state not in yes_no:
+            task_state = input("Was task successful? (y/n)\n")
+        failed = True if task_state == "n" else False
+        return done, failed
+
+def ask_for_execution_failure():
+    """
+    Ask if execution failure happened
+    """
+    yes_no = ["y", "n"]
+    status = ""
+    while status not in yes_no:
+        status = input("Skill execution failed? (y/n)")
+    execution_failure = True if status == "y" else False
+    return execution_failure
+
 def main(args):
+
     demo = FullPipelineDemo(env_name=args.env_name)
-    while True:
-        demo.take_action(side_camera_id=0)
+
+    # don't record anything. just run the demo
+    if not args.record:
+        while True:
+            demo.take_action(side_camera_id=0)
+
+    # record clock time, selected objects, executed skills, execution failure, episode success/failure, episode length
+    else:
+        save_path = f"{args.save_dir}/{args.env_name}"
+        os.makedirs(save_path, exist_ok=True)
+        full_data = {}
+        for i in range(args.n_iter):
+            
+            obj_names, skill_names, execution_failures = [], [], []
+            start_time = time.time()
+            done = False
+            failed = False
+            
+            # run episode
+            while not done:
+                # take action and check task status, execution failure
+                obj_name, skill_name = demo.take_action(side_camera_id=0)
+                execution_failure = ask_for_execution_failure() # was skill execution successful?
+                done, failed = ask_for_task_state() # has episode ended?
+
+                # record
+                obj_names.append(obj_name)
+                skill_names.append(skill_name)
+                execution_failures.append(execution_failure)
+
+            end_time = time.time()
+            full_data["episodes"][f"episode{i}"] = {
+                "objects" : obj_names,
+                "skills" : skill_names,
+                "execution_failures" : execution_failures,
+                "success" : not failed,
+                "failed" : failed,
+                "episode_len" : len(skill_names),
+                "clock_time" : end_time - start_time,
+            }
+
+        # save data
+        with open(f"{save_path}/data.json", "x") as outfile:
+            json.dump(full_data, outfile, indent=4)
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--env_name", type=str, default="TableSetting")
+    parser.add_argument("--n_eps", type=int, default=1) # number of episodes
+    parser.add_argument("--record", action="store_true") # whether to record data
+    parser.add_argument("--save_dir", type=str, default="robot_standalone_experiments")
     args = parser.parse_args()
 
     main(args)

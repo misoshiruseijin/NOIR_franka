@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import argparse
 sys.path.append("..")
 sys.path.insert(1, "/home/eeg/deoxys_control/deoxys")
 
@@ -20,8 +21,14 @@ from deoxys.experimental.motion_utils import reset_joints_to
 #         ]
 
 #### NOIR Reset Position ####
-reset_joint_positions = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
+parser = argparse.ArgumentParser()
+parser.add_argument("--out", action="store_true")
+args = parser.parse_args()
 
+if args.out:
+    reset_joint_positions = [-np.pi/2, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
+else:
+    reset_joint_positions = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
 
 robot_interface = FrankaInterface(
     general_cfg_file="config/charmander.yml"

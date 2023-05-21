@@ -5,24 +5,33 @@ from utils.camera_utils import get_camera_image, get_camera_intrinsic_matrix, ge
 
 import time
 import pdb
-camera_interfaces = {
-        0 : CameraRedisSubInterface(camera_id=0),
-        1 : CameraRedisSubInterface(camera_id=1),
-    }
+# camera_interfaces = {
+#         0 : CameraRedisSubInterface(camera_id=0),
+#         1 : CameraRedisSubInterface(camera_id=1),
+#     }
 
-detection_utils = DetectionUtils()
-texts = ["light brown wooden broom handle", "pink rabbit toy", "brown bear toy"]
-for i in range(2):
-    coords = detection_utils.get_obj_pixel_coord(
-        camera_interface=camera_interfaces[i],
-        camera_id=i,
-        texts=texts,
-        thresholds=[0.001] * len(texts),
-        save_img=True,
-        n_instances=1
-    )
-    print(f"Coords in camera {i}")
-    print(coords)
+# detection_utils = DetectionUtils()
+# texts = ["light blue bowl", "shiny silver cup", "brown handle"]
+# for i in range(2):
+#     coords = detection_utils.get_obj_pixel_coord(
+#         camera_interface=camera_interfaces[i],
+#         camera_id=i,
+#         texts=texts,
+#         thresholds=[0.001] * len(texts),
+#         save_img=True,
+#         n_instances=1
+#     )
+#     print(f"Coords in camera {i}")
+#     print(coords)
+
+import cv2
+from utils.detection_utils_eeg import ObjectDetector
+detector = ObjectDetector()
+coords = detector.get_obj_pixel_coord(
+    img_array=cv2.imread("param_selection_img2.png"),
+    texts=["light blue bowl", "shiny silver cup", "brown handle"],
+    thresholds=[0.001]*3,
+)
 
 # while True:
 #     start_time = time.time()

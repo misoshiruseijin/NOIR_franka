@@ -22,7 +22,7 @@
         "red mug" : ["pick_from_top", "pick_from_side", "push_x"],
         "none" : ["place_from_top", "place_from_side", "pour_from_side", "reset_joints"]
     },
-    "Toy Cleanup" : {
+    "ToyCleanup" : {
         "banana toy" : ["pick_from_top", "pick_from_side", "push_x"],
         "brown cow toy" : ["pick_from_top", "pick_from_side", "push_x"],
         "beize tea cup" : ["pick_from_top", "pick_from_side", "push_x"],

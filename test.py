@@ -48,16 +48,16 @@ for id in camera_interfaces.keys():
 
 
 ################## TEST OBJ 3D POS ESTIMATE ######################
-env = RealRobotEnvGeneral(
-    env_name="Sweeping",
-)
-obs = env.reset()
-handle_pos = obs["world_coords"]["red lego block"]
-skill_selection_vec = np.zeros(env.num_skills)
-skill_selection_vec[0] = 1
-params = handle_pos
-action = np.concatenate([skill_selection_vec, params])
-obs, reward, done, info = env.step(action)
+# env = RealRobotEnvGeneral(
+#     env_name="Sweeping",
+# )
+# obs = env.reset()
+# handle_pos = obs["world_coords"]["red lego block"]
+# skill_selection_vec = np.zeros(env.num_skills)
+# skill_selection_vec[0] = 1
+# params = handle_pos
+# action = np.concatenate([skill_selection_vec, params])
+# obs, reward, done, info = env.step(action)
 
 
 ################## TEST Z DISCRETIZATION #####################
@@ -142,22 +142,24 @@ obs, reward, done, info = env.step(action)
 
 ################### SKILLS WITHOUT ENVIRONMENT ####################
 # setup robot interface
-# controller_type = "OSC_POSE"
-# controller_config = get_default_controller_config(controller_type)
-# robot_interface = FrankaInterface(
-#     general_cfg_file="config/charmander.yml",
-#     control_freq=20,
-# )
+controller_type = "OSC_POSE"
+controller_config = get_default_controller_config(controller_type)
+robot_interface = FrankaInterface(
+    general_cfg_file="config/charmander.yml",
+    control_freq=20,
+)
 
-# # setup skills
-# skill = PrimitiveSkill(
-#     controller_type=controller_type,
-#     controller_config=controller_config,
-#     robot_interface=robot_interface,
-#     waypoint_height=0.25,
-#     workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
-# )
+# setup skills
+skill = PrimitiveSkill(
+    controller_type=controller_type,
+    controller_config=controller_config,
+    robot_interface=robot_interface,
+    waypoint_height=0.25,
+    workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
+)
 
+# skill._wipe_y(params=[0.45, 0.15, 0.2])
+skill.execute_skill(action=[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4304841568571428, -0.2499568708538461, 0.03])
 # skill._rehome_pos_quat(params=np.concatenate([skill.from_top_reset_eef_pos, skill.from_side_quat, [1, 1]]))
 # skill._pick_from_top(params=np.array([0.5, 0.0, 0.2]))
 # skill._pick_from_side(params=np.array([0.5, 0.0, 0.2]))

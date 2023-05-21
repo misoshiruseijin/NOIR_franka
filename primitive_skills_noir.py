@@ -15,6 +15,7 @@ from deoxys.utils.input_utils import input2action
 
 from deoxys.utils.log_utils import get_deoxys_example_logger
 import utils.transformation_utils as U
+import json
 
 import redis
 
@@ -86,68 +87,88 @@ class PrimitiveSkill:
 
         # executable skills
         self.skills = {
-            "pick_from_top" : {
-                "num_params" : 3,
-                "skill" : self._pick_from_top,
-                "default_idx" : 0,
-            },
-            "pick_from_side" : {
-                "num_params" : 3,
-                "skill" : self._pick_from_side,
-                "default_idx" : 1,
-            },
-            "place_from_top" : {
-                "num_params" : 3,
-                "skill" : self._place_from_top,
-                "default_idx" : 2,
-            },
-            "place_from_side" : {
-                "num_params" : 3,
-                "skill" : self._place_from_side,
-                "default_idx" : 3,
-            },
-            "push_x" : {
-                "num_params" : 3,
-                "skill" : self._push_x,
-                "default_idx" : 4,
-            },
-            "push_z" : {
-                "num_params" : 3,
-                "skill" : self._push_z,
-                "default_idx" : 5,
-            },
-            "wipe_xy" : {
-                "num_params" : 6,
-                "skill" : self._wipe_xy,
-                "default_idx" : 6,
-            },
-            "draw_x" : {
-                "num_params" : 3,
-                "skill" : self._draw_x,
-                "default_idx" : 7,
-            },
-            "screw" : {
-                "num_params" : 4,
-                "skill" : self._screw,
-                "default_idx" : 8,
-            },
-            "pour_from_top" : {
-                "num_params" : 3,
-                "skill" : self._pour_from_top,
-                "default_idx" : 9,
-            },
-            "pour_from_side" : {
-                "num_params" : 3,
-                "skill" : self._pour_from_side,
-                "default_idx" : 10,
-
-            },
-            "reset_joints" : {
-                "num_params" : 0,
-                "skill" : self._reset_joints,
-                "default_idx" : 11,
-            },
+            "pick_from_top" : self._pick_from_top,
+            "pick_from_side" : self._pick_from_side,
+            "place_from_top" : self._place_from_top,
+            "place_from_side" : self._place_from_side,
+            "push_x" : self._push_x,
+            "push_z" : self._push_z,
+            "wipe_xy" : self._wipe_xy,
+            "wipe_y" : self._wipe_y,
+            "draw_x" : self._draw_x,
+            "screw" : self._screw,
+            "pour_from_top" : self._pour_from_top,
+            "pour_from_side" : self._pour_from_side,
+            "reset_joints" : self._reset_joints,
         }
+
+        with open('config/skill_config.json') as json_file:
+            self.skill_dict = json.load(json_file)
+            self.num_skills = len(self.skill_dict.keys())
+
+        # self.skills = {
+        #     "pick_from_top" : {
+        #         "num_params" : 3,
+        #         "skill" : self._pick_from_top,
+        #         "default_idx" : 0,
+        #     },
+        #     "pick_from_side" : {
+        #         "num_params" : 3,
+        #         "skill" : self._pick_from_side,
+        #         "default_idx" : 1,
+        #     },
+        #     "place_from_top" : {
+        #         "num_params" : 3,
+        #         "skill" : self._place_from_top,
+        #         "default_idx" : 2,
+        #     },
+        #     "place_from_side" : {
+        #         "num_params" : 3,
+        #         "skill" : self._place_from_side,
+        #         "default_idx" : 3,
+        #     },
+        #     "push_x" : {
+        #         "num_params" : 3,
+        #         "skill" : self._push_x,
+        #         "default_idx" : 4,
+        #     },
+        #     "push_z" : {
+        #         "num_params" : 3,
+        #         "skill" : self._push_z,
+        #         "default_idx" : 5,
+        #     },
+        #     "wipe_xy" : {
+        #         "num_params" : 6,
+        #         "skill" : self._wipe_xy,
+        #         "default_idx" : 6,
+        #     },
+        #     "draw_x" : {
+        #         "num_params" : 3,
+        #         "skill" : self._draw_x,
+        #         "default_idx" : 7,
+        #     },
+        #     "screw" : {
+        #         "num_params" : 4,
+        #         "skill" : self._screw,
+        #         "default_idx" : 8,
+        #     },
+        #     "pour_from_top" : {
+        #         "num_params" : 3,
+        #         "skill" : self._pour_from_top,
+        #         "default_idx" : 9,
+        #     },
+        #     "pour_from_side" : {
+        #         "num_params" : 3,
+        #         "skill" : self._pour_from_side,
+        #         "default_idx" : 10,
+
+        #     },
+        #     "reset_joints" : {
+        #         "num_params" : 0,
+        #         "skill" : self._reset_joints,
+        #         "default_idx" : 11,
+        #     },
+        # }
 
         # helper skills used internally by executable skills
         self.helper_skills = {
@@ -170,14 +191,14 @@ class PrimitiveSkill:
         }
 
         if idx2skill is None:
-            self.idx2skill = { skill["default_idx"] : name for name, skill in self.skills.items()}
+            self.idx2skill = { skill["default_idx"] : name for name, skill in self.skill_dict.items()}
         else:
             for name in idx2skill.values():
                 assert name in self.skills.keys(), f"Error with skill {name}. Skill name must be one of {self.skills.keys()}"
             self.idx2skill = idx2skill    
     
-        self.num_skills = len(self.idx2skill)
-        self.max_num_params = max([self.skills[skill_name]["num_params"] for skill_name in self.idx2skill.values()])
+        # self.num_skills = len(self.idx2skill)
+        self.max_num_params = max([self.skill_dict[skill_name]["num_params"] for skill_name in self.idx2skill.values()])
 
         # interruption flag
         self.interrupt = False # this is set to true when the human sends a signal to interrupt a skill during execution
@@ -201,7 +222,8 @@ class PrimitiveSkill:
         """
         # get the skill to execute
         skill_idx = np.argmax(action[:self.num_skills])
-        skill = self.skills[self.idx2skill[skill_idx]]["skill"] 
+        # skill = self.skills[self.idx2skill[skill_idx]]["skill"] 
+        skill = self.skills[self.idx2skill[skill_idx]]
         skill_name = self.skills[self.idx2skill[skill_idx]]
 
         # extract params and execute
@@ -238,9 +260,11 @@ class PrimitiveSkill:
             skill = self.helper_skills[skill_name]["skill"]
             skill(params=params)
 
-    """
-    Executable Skills
-    """
+
+    ########################################################################################
+    ################################## EXECUTABLE SKILLS ###################################
+    ########################################################################################
+    
     def _pick_from_top(self, params):
         """
         Picks up object at specified position from top and rehomes
@@ -334,7 +358,7 @@ class PrimitiveSkill:
         Start from specified position with gripper pointing down, pushes in z direction until end_z, then rehomes
 
         Args: 
-            params (2-tuple of floats) : [start_pos(xy), end_z]
+            params (3-tuple of floats) : [start_pos(xy), end_z]
         """
 
         start_pos = [params[0], params[1], self.waypoint_height]
@@ -475,6 +499,37 @@ class PrimitiveSkill:
         ]
         self._execute_sequence(sequence)
 
+    def _wipe_y(self, params):
+        """
+        Wipes a surface by starting at specified position, moving in y direction by a fixed amount in a wiping motion, then rehomes
+        
+        Args:
+            params (3-tuple of floats) : [start_pos]
+        """
+        start_pos = params[:3]
+        gripper_action = 1 # gripper is closed\
+        dy = 0.25
+
+        end_pos = [start_pos[0], start_pos[1] + dy, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        # convert euler to quat
+        from_top_euler = U.quat2euler(self.from_top_quat)
+        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        goal_quat = U.euler2quat(goal_euler)
+
+        sequence = [
+            [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 0]]) ], # to start pos
+            [ "move_to", np.concatenate([end_pos, goal_quat, [gripper_action, 1]]) ], # move by delta
+            [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 1]]) ], # back to start pos
+            [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ], 
+        ]
+        self._execute_sequence(sequence)
+
     def _draw_x(self, params):
         """
         Draws X centered at specified 3d position
@@ -589,7 +644,7 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([pour_pos, self.from_side_quat, [1, 1]]) ], # to grasp pos
             [ "move_to", np.concatenate([pour_pos, goal_quat, [1, 1]]) ], # tilt
             [ "move_to", np.concatenate([pour_pos, self.from_side_quat, [1, 0]]) ], # rotate back
-            [ "move_to", np.concatenate([waypoint, self.from_side_quat, [1, 0]]) ], # to waypoint
+            # [ "move_to", np.concatenate([waypoint, self.from_side_quat, [1, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],
         ]

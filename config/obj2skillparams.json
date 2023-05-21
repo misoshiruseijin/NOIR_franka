@@ -2,7 +2,8 @@
     "TableSetting" : {
         "light blue bowl" : {
             "place_ref" : "world",
-            "pick_from_top": [0.0, 0.02, 0.02],
+            "pick_from_top": [0.0, 0.02, 
+            0.02],
             "place_from_top" : [0.45, 0.03, 0.03]
         },
         "shiny silver cup" : {

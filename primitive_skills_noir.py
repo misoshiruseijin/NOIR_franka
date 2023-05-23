@@ -68,6 +68,8 @@ class PrimitiveSkill:
         self.from_side_reset_eef_pos = [0.45775618, 0.25018698, 0.26756592]
         self.from_top_quat = [0.9998506, 0.00906314, 0.01459545, 0.00192735] # quat when eef is pointing straight down 
         self.from_side_quat = [0.508257, 0.49478495, -0.49082687, 0.5059166] # quat when eef is pointing to right of robot 
+        self.from_side_quat2 = [6.985424e-01, 6.197878e-03, 5.697145e-04, 7.155416e-01]
+        self.from_diag_quat = [0.9250823, 0.01997216, 0.01295406, 0.37901983]
         
         self.reset_joint_positions = {
             "from_top" : [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026],
@@ -91,6 +93,7 @@ class PrimitiveSkill:
             "pick_from_side" : self._pick_from_side,
             "place_from_top" : self._place_from_top,
             "place_from_side" : self._place_from_side,
+            "place_from_diag" : self._place_from_diag,
             "push_x" : self._push_x,
             "push_z" : self._push_z,
             "wipe_xy" : self._wipe_xy,
@@ -224,13 +227,14 @@ class PrimitiveSkill:
         skill_idx = np.argmax(action[:self.num_skills])
         # skill = self.skills[self.idx2skill[skill_idx]]["skill"] 
         skill = self.skills[self.idx2skill[skill_idx]]
-        skill_name = self.skills[self.idx2skill[skill_idx]]
+        skill_name = self.idx2skill[skill_idx]
 
         # extract params and execute
         params = action[self.num_skills:]
         print(f"Executing skill {skill_name} with params {params}")
 
         skill(params)
+        return skill_name
 
     def _execute_sequence(self, sequence):
         """
@@ -348,6 +352,27 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([waypoint, self.from_side_quat, [1, 1]]) ], # to waypoint
             [ "move_to", np.concatenate([goal_pos, self.from_side_quat, [1, 1]]) ], # to place pos
             [ "gripper_action", [-1] ], # release gripper
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+    
+    def _place_from_diag(self, params):
+        """
+        Places object at specified location with gripper orientation 3
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0) 
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.from_diag_quat, [1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.from_diag_quat, [1, 1]]) ], # to place pos
+            [ "gripper_action", [-1] ], # release gripper
+            [ "move_to", np.concatenate([waypoint, self.from_top_quat, [-1, 0]]) ], # to waypoint
             [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],
         ]
@@ -670,7 +695,7 @@ class PrimitiveSkill:
             print("HERE!")
         else:
             reset_joint_positions = params[:8]
-        print("reset joint pos", reset_joint_positions)
+        # print("reset joint pos", reset_joint_positions)
         reset_joints_to_custom(self.robot_interface, reset_joint_positions)   
 
     """

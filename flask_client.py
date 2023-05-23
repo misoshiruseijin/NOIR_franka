@@ -9,6 +9,10 @@ import cv2
 import numpy as np
 import json
 import time
+import argparse
+from datetime import datetime
+import os
+import logging
 
 # example image data to send
 img0 = cv2.imread("sample_images/camera0.png")
@@ -80,7 +84,8 @@ def check_skill_params_ready():
         url = f"http://{SERVER_IP}:{PORT}/api/resetparams"
         reset_response = requests.get(url)
         if reset_response.status_code == 200:
-            print("params reset successfully")
+            pass
+            # print("params reset successfully")
         else:
             print("params not reset!!")
         # print("Received Code :", code)
@@ -88,40 +93,86 @@ def check_skill_params_ready():
     else:
         return None
 
+def main(args):
 
-def main():
+    env_name = args.env
+    subject = args.subject
+    with open('config/task_obj_skills.json') as json_file:
+        task_dict = json.load(json_file)
+        assert env_name in task_dict.keys(), f"Unrecognized environment name. Choose from {task_dict.keys()}"
 
-    # breakpoint()
+    log_dir = "experiment_logs"
+    exp_datetime = datetime.now().strftime("%m_%d_%y_%H_%M")
+    log_file = f"{log_dir}/{env_name}_{args.subject}_{exp_datetime}.txt"
+
+    logging.basicConfig(level=logging.DEBUG)
+    file_handler = logging.FileHandler(log_file)
+    formatter = logging.Formatter('%(asctime)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logging.getLogger('').addHandler(file_handler)
+
     # initialize environments and gety initial observation
-    env = RealRobotEnvMulti()
-    env.reset()
-    action = np.zeros(env.skill.num_skills)
+    resset_joints = False if args.resume else True
+    env = RealRobotEnvMulti(
+        reset_joints_on_init=resset_joints,
+    )
+    if resset_joints:
+        env.reset()
+    action = np.zeros(env.num_skills)
     # img_data = env.get_image_observations(dummy_action, img_as_list=True, save_images=True)
 
     ###### No Resend Image Case #####
-    # send_images(dummy_data_to_send)
+    eps_start_time = time.time() # episode start time
+    logging.critical(f"Start Experiment {env_name} with Subject {subject}")
 
     while True:
-        # send_images(dummy_data_to_send)
+        step_start_time = time.time()
+
         # get new images and send 
         img_data = env.get_image_observations(action, img_as_list=True, save_images=True)
-        img_data["env_name"] = "TableSetting"
+        img_data["env_name"] = env_name
+
         send_images(img_data)
+        decode_start_time = time.time()
 
         # get params
         action = None
         while action is None:
             action = check_skill_params_ready()
-            print("No action received")
+            # action = np.zeros(env.num_skills).tolist()
+            # action[5] = 1
+            # action += [0.5, 0.1, 0.3]
+            # print("No action received")
             time.sleep(1)
+
+        decode_end_time = time.time()
         
         # take action
         print("Action received. Executing ", action)
         obs, reward, done, info = env.step(action)
-
+        step_end_time = time.time()
+        
+        skill_name = info["skill_name"]
+        params = action[env.num_skills:]
+        logging.critical(f"Skill : {skill_name}")
+        logging.critical(f"Params : {params}")
+        logging.critical(f"Time this step : {step_end_time - step_start_time}")
+        logging.critical(f"EEG response time : {decode_end_time - decode_start_time}")
+        logging.critical(f"Time elapsed : {step_end_time - eps_start_time}")
+        
+        print("Time this step: ", step_end_time - step_start_time)
+        print("Decoding time: ", decode_end_time - decode_start_time)
+        print("Total time so far: ", step_end_time - eps_start_time)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--resume", action="store_true")
+    # parser.add_argument("--exp_name", type=str, default="exp")
+    parser.add_argument("--subject", type=str, default="A")
+    parser.add_argument("--logdir", type=str, default="experiment_logs")
+    parser.add_argument("--env", type=str)
+    args = parser.parse_args()
+    main(args)
 
 
 # """

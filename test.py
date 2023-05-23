@@ -28,6 +28,13 @@ import json
 
 import tkinter as tk
 
+with open('config/task_obj_skills.json') as json_file:
+            task_dict = json.load(json_file)
+
+with open('config/skill_config.json') as json_file:
+    skill_dict = json.load(json_file)
+    num_skills = len(skill_dict.keys())
+
 camera_interfaces = {
     0 : CameraRedisSubInterface(camera_id=0),
     1 : CameraRedisSubInterface(camera_id=1),
@@ -157,12 +164,19 @@ skill = PrimitiveSkill(
     waypoint_height=0.25,
     workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
 )
+# get one-hot skill selection vector
+skill_name = "place_from_diag"
+skill_idx = skill_dict[skill_name]["default_idx"]
+skill_selection_vec = np.zeros(num_skills)
+skill_selection_vec[skill_idx] = 1
+params = [0.5, 0.0, 0.2]
 
+# execute action
+action = np.concatenate([skill_selection_vec, params])
+skill.execute_skill(action)
 # skill._wipe_y(params=[0.45, 0.15, 0.2])
-skill.execute_skill(action=[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4304841568571428, -0.2499568708538461, 0.03])
 # skill._rehome_pos_quat(params=np.concatenate([skill.from_top_reset_eef_pos, skill.from_side_quat, [1, 1]]))
 # skill._pick_from_top(params=np.array([0.5, 0.0, 0.2]))
-# skill._pick_from_side(params=np.array([0.5, 0.0, 0.2]))
 # skill._gripper_action([1])
 # skill._rehome(params=np.append(skill.reset_joint_positions["from_top"], 0.0))
 # skill._rehome(params=np.append(skill.reset_joint_positions["from_top"], 1.0))

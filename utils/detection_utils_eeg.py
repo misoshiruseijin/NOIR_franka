@@ -15,7 +15,16 @@ class ObjectDetector:
         self.processor = OwlViTProcessor.from_pretrained("google/owlvit-base-patch32")
         self.model = OwlViTForObjectDetection.from_pretrained("google/owlvit-base-patch32")
 
-    def get_obj_pixel_coord(self, img_array, texts, save_filename="camera", thresholds=None, save_img=True, n_instances=1):
+    def get_obj_pixel_coord(
+            self,
+            img_array,
+            texts,
+            save_filename="camera",
+            thresholds=None,
+            save_img=True, 
+            n_instances=1,
+            debug=False
+        ):
             """
             Get center 2d coordinate of detected objects given an input image
 
@@ -58,7 +67,8 @@ class ObjectDetector:
                 box = [round(i, 2) for i in box.tolist()]
                 obj_name = texts[label]
                 if score >= obj2thresh[obj_name]: # TODO - cleanup code
-                    # print(f"Detected {obj_name} with confidence {round(score.item(), 3)} at location {box}")
+                    if debug:
+                        print(f"Detected {obj_name} with confidence {round(score.item(), 3)} at location {box}")
                     coords[obj_name]["boxes"].append(box)
                     coords[obj_name]["scores"].append(score.item())
                     center = ( round((box[0] + box[2])/2), round((box[1] + box[3])/2) )

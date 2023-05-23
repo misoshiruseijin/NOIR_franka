@@ -26,12 +26,35 @@ import pdb
 
 import cv2
 from utils.detection_utils_eeg import ObjectDetector
-detector = ObjectDetector()
-coords = detector.get_obj_pixel_coord(
-    img_array=cv2.imread("param_selection_img2.png"),
-    texts=["light blue bowl", "shiny silver cup", "brown handle"],
-    thresholds=[0.001]*3,
-)
+import json
+import argparse
+
+
+def main(args):
+    with open('config/task_obj_skills.json') as json_file:
+        task_dict = json.load(json_file)
+        assert args.env in task_dict.keys(), f"Unrecognized environment name. Choose from {task_dict.keys()}"
+        obj2skills = task_dict[args.env]
+        obj_names = list(obj2skills.keys())
+
+    detector = ObjectDetector()
+    texts = obj_names.copy()
+    texts.remove("none")
+    print("looking for\n", texts)
+    coords = detector.get_obj_pixel_coord(
+        img_array=cv2.imread("photos/_camera2.png"),
+        # img_array=cv2.imread("param_selection_img2.png"),
+        texts=texts,
+        thresholds=[0.002]*len(texts),
+        debug=True,
+    )
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", type=str, help="name of task")
+    args = parser.parse_args()
+    main(args)
+
 
 # while True:
 #     start_time = time.time()

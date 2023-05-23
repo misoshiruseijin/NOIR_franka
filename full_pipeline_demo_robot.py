@@ -23,6 +23,7 @@ class FullPipelineDemo:
     def __init__(
         self,
         env_name,
+        resume=False,
     ):
 
         """
@@ -38,7 +39,7 @@ class FullPipelineDemo:
         self.canvas = None # TODO - not needed if not using tkinter UI
         self.window = None # TODO - not needed if not using tkinter UI
         self.detection_utils = DetectionUtils()
-        self.env = RealRobotEnvMulti()
+        self.env = RealRobotEnvMulti(reset_joints_on_init=not resume)
         self.img_obs = self.env.get_image_observations(save_images=True)
 
         with open('config/task_obj_skills.json') as json_file:
@@ -83,9 +84,9 @@ class FullPipelineDemo:
             obj_name (str) : name of selected object
         """
         # TODO - run object detector, SSVEP stimulus generation, SSVEP decoding, etc.
-
-        obj_name = input(f"choose obj from {self.obj_names}\n") # TODO - replace with SSVEP results
-        assert (obj_name in self.obj_names), f"object must be one of {self.obj_names}, but got {obj_name}\n"
+        obj_name = ""
+        while obj_name not in self.obj_names:
+            obj_name = input(f"choose obj from {self.obj_names}\n")
         return obj_name
 
     def get_skill_selection(self, obj_name):
@@ -99,9 +100,9 @@ class FullPipelineDemo:
             skill_name (str) : name of selected skill
         """
         skill_options = self.obj2skills[obj_name] # list of skills to preesnt to the human, given 
-        
-        skill_name = input(f"choose skill from {skill_options}\n") # TODO - replace this from motor imagery results
-        assert skill_name in skill_options, f"skill must be one of {skill_options}, but got {skill_name}\n"
+        skill_name = ""
+        while skill_name not in skill_options:
+            skill_name = input(f"choose skill from {skill_options}\n") 
         return skill_name
 
     def get_param_selection(self, topdown_img, sideview_img, side_camera_id, skill_name):
@@ -209,7 +210,7 @@ def ask_for_execution_failure():
 
 def main(args):
 
-    demo = FullPipelineDemo(env_name=args.env_name)
+    demo = FullPipelineDemo(env_name=args.env_name, resume=args.resume)
 
     # don't record anything. just run the demo
     if not args.record:
@@ -223,10 +224,10 @@ def main(args):
         full_data = {}
         for i in range(args.n_iter):
             
-            obj_names, skill_names, execution_failures = [], [], []
-            start_time = time.time()
+            obj_names, skill_names, execution_failures, time_stamps = [], [], [], []
             done = False
             failed = False
+            start_time = time.time()
             
             # run episode
             while not done:
@@ -234,11 +235,13 @@ def main(args):
                 obj_name, skill_name = demo.take_action(side_camera_id=0)
                 execution_failure = ask_for_execution_failure() # was skill execution successful?
                 done, failed = ask_for_task_state() # has episode ended?
+                cur_time = time.time() - start_time
 
                 # record
                 obj_names.append(obj_name)
                 skill_names.append(skill_name)
                 execution_failures.append(execution_failure)
+                time_stamps.append(cur_time)
 
             end_time = time.time()
             full_data["episodes"][f"episode{i}"] = {
@@ -248,7 +251,8 @@ def main(args):
                 "success" : not failed,
                 "failed" : failed,
                 "episode_len" : len(skill_names),
-                "clock_time" : end_time - start_time,
+                "time_stamps" : time_stamps,
+                "total_time" : end_time - start_time,
             }
 
         # save data
@@ -262,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_eps", type=int, default=1) # number of episodes
     parser.add_argument("--record", action="store_true") # whether to record data
     parser.add_argument("--save_dir", type=str, default="robot_standalone_experiments")
+    parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
     main(args)

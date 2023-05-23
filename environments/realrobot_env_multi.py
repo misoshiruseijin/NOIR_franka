@@ -38,6 +38,7 @@ class RealRobotEnvMulti(gym.Env):
         },
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
         normalized_params=True,
+        reset_joints_on_init=True,
     ): 
 
         super().__init__()
@@ -80,8 +81,9 @@ class RealRobotEnvMulti(gym.Env):
         self.reset_q = None
 
         # reset joints
-        print("--------- Resseting Joints -----------")
-        self.skill._reset_joints(np.append(self.skill.reset_joint_positions["from_top"], -1.0))
+        if reset_joints_on_init:
+            print("--------- Resseting Joints -----------")
+            self.skill._reset_joints(np.append(self.skill.reset_joint_positions["from_top"], -1.0))
 
     def reward(self,):
         """
@@ -106,11 +108,12 @@ class RealRobotEnvMulti(gym.Env):
         """ 
 
         # execute skill
-        self.skill.execute_skill(action)
+        skill_name = self.skill.execute_skill(action)
         reward, done, info = self._post_action(action)
         # # upload images
         # self._upload_images()
         obs = {}
+        info["skill_name"] = skill_name
 
         return obs, reward, done, info
 

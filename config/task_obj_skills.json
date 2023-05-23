@@ -1,32 +1,37 @@
 {
+    "Breakfast" : {
+        "slice of bread" : ["pick_from_top", "pick_from_side", "push_x"],
+        "dark brown handle" : ["pick_from_top", "pick_from_side", "push_x"],
+        "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
+        "none" : ["place_from_top", "place_from_side", "place_from_diag"]
+    },
     "TableSetting" : {
         "light blue bowl" : ["pick_from_top", "pick_from_side", "push_x"],
         "shiny silver cup" : ["pick_from_top", "pick_from_side", "push_x"],
-        "green handle" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "reset_joints"]
+        "dark brown handle" : ["pick_from_top", "pick_from_side", "push_x"],
+        "none" : ["place_from_top", "place_from_side"]
     },
     "Whiteboard" : {
         "dark blue eraser" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "wipe_xy", "reset_joints"]
+        "none" : ["place_from_top", "place_from_side", "wipe_xy"]
     },
     "MealPrep" : {
-        "light brown handle" : ["pick_from_top", "pick_from_side", "push_x"],
         "tomato slice" : ["pick_from_top", "pick_from_side", "push_x"],
         "lettuce" : ["pick_from_top", "pick_from_side", "push_x"],
         "bread" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "push_z", "reset_joints"]
+        "none" : ["place_from_top", "place_from_side", "place_from_diag"]
     },
     "Tea" : {
-        "teabag" : ["pick_from_top", "pick_from_side", "push_x"],
+        "triangular teabag" : ["pick_from_top", "pick_from_side", "push_x"],
         "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
         "red mug" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "pour_from_side", "reset_joints"]
+        "none" : ["place_from_top", "place_from_side", "pour_from_side"]
     },
     "ToyCleanup" : {
         "banana toy" : ["pick_from_top", "pick_from_side", "push_x"],
         "brown cow toy" : ["pick_from_top", "pick_from_side", "push_x"],
         "beize tea cup" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "reset_joints"]
+        "none" : ["place_from_top", "place_from_side"]
     },
     "Bookshelf" : {
 
@@ -36,7 +41,7 @@
     },
     "Featherdust" : {
         "lavender handle" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "wipe_xy", "reset_joints"]
+        "none" : ["place_from_top", "place_from_side", "wipe_xy"]
     },
     "Waterbottle" : {
         "water bottle" : [],
@@ -46,15 +51,16 @@
     },
     "Tofu" : {
         "pink knife handle" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "push_x", "push_z", "reset_joints"]
+        "none" : ["place_from_top", "push_x", "push_z"]
     },
     "Tictactoe" : {
         "dry erase marker" : [],
+        "dark blue eraser" : [],
         "none" : []
     },
     "Sweeping" : {
         "red lego block" : ["pick_from_top", "pick_from_side", "push_x"],
         "tiger toy" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "push_x", "reset_joints"]
+        "none" : ["place_from_top", "place_from_side", "push_x"]
     }
 }

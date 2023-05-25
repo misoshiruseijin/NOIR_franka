@@ -28,12 +28,13 @@ class RealRobotEnvMulti(gym.Env):
 
     def __init__(
         self,
+        env_name,
         controller_type="OSC_POSE",
         general_cfg_file="config/charmander.yml",
         control_freq=20,
         workspace_limits={"x" : (0.35, 0.55), "y" : (-0.15, 0.25), "z" : (0.03, 0.45)},
         skill_config={
-            "waypoint_height" : 0.25,
+            "waypoint_height" : 0.3,
             "idx2skill" : None,
         },
         gripper_thresh=0.04, # gripper q below this value is considered "closed"
@@ -66,13 +67,24 @@ class RealRobotEnvMulti(gym.Env):
         for id in self.camera_interfaces.keys():
             self.camera_interfaces[id].start()
 
+        print("Environment name: ", env_name)
+        if env_name in ["Bookshelf"]:
+            use_higher_reset_pos = True
+            self.waypoint_height = 0.7
+            print("Using higher reset and waypoint positions")
+        else:
+            print("using standard reset and waypoint heights")
+            use_higher_reset_pos = False
+            self.waypoint_height = 0.3
+
         # setup skills
         self.skill = PrimitiveSkill(
             controller_type=self.controller_type,
             controller_config=self.controller_config,
             robot_interface=self.robot_interface,
-            waypoint_height=skill_config["waypoint_height"],
+            waypoint_height=self.waypoint_height,
             workspace_limits=self.workspace_limits,
+            use_high_reset_pos=use_higher_reset_pos,
         )
 
         self.num_skills = self.skill.num_skills

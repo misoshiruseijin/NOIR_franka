@@ -45,8 +45,8 @@ class PrimitiveSkill:
         workspace_limits=None,
         idx2skill=None,
         enable_eeg_interrupt=False,
+        use_high_reset_pos=False,
         ):
-
         """
         Args: 
             interface_config (str) : path to robot interface config yaml file
@@ -68,13 +68,19 @@ class PrimitiveSkill:
         self.from_side_reset_eef_pos = [0.45775618, 0.25018698, 0.26756592]
         self.from_top_quat = [0.9998506, 0.00906314, 0.01459545, 0.00192735] # quat when eef is pointing straight down 
         self.from_side_quat = [0.508257, 0.49478495, -0.49082687, 0.5059166] # quat when eef is pointing to right of robot 
-        self.from_side_quat2 = [6.985424e-01, 6.197878e-03, 5.697145e-04, 7.155416e-01]
+        self.from_side_quat2 = [0.6941543, 0.02806479, 0.01957926, 0.7190123] # used for pick from side 2
         self.from_diag_quat = [0.9250823, 0.01997216, 0.01295406, 0.37901983]
-        
+
+        if use_high_reset_pos:
+            from_top = [0.01644747, -0.44936592, -0.0032551, -1.98056433, -0.03537027, 1.52042939, 0.82159965]
+            out_of_way_top = [-np.pi/2, -0.69435092, -0.0111128, -2.31718587, -0.00535662, 1.63639478, 0.6249819]
+        else:
+            from_top = [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
+            out_of_way_top = [-np.pi/2, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026]
         self.reset_joint_positions = {
-            "from_top" : [0.07263956, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026],
+            "from_top" : from_top,
             "from_side" : [0.45222925, 0.3912074, 0.41882967, -2.10946937, -0.89842106, 0.98800324, 0.41594728],
-            "out_of_way_top" : [-np.pi/2, -0.34306933, -0.01955571, -2.45878116, -0.01170808, 2.18055725, 0.84792026],
+            "out_of_way_top" : out_of_way_top,
             "out_of_way_side" : [-np.pi/2, 0.3912074, 0.41882967, -2.10946937, -0.89842106, 0.98800324, 0.41594728],
         }
         self.waypoint_height = waypoint_height # height of waypoint in pick, place, push skills
@@ -91,10 +97,13 @@ class PrimitiveSkill:
         self.skills = {
             "pick_from_top" : self._pick_from_top,
             "pick_from_side" : self._pick_from_side,
+            "pick_book" : self._pick_book,
             "place_from_top" : self._place_from_top,
             "place_from_side" : self._place_from_side,
             "place_from_diag" : self._place_from_diag,
             "push_x" : self._push_x,
+            "push_y" : self._push_y,
+            "push_book" : self._push_book,
             "push_z" : self._push_z,
             "wipe_xy" : self._wipe_xy,
             "wipe_y" : self._wipe_y,
@@ -102,76 +111,13 @@ class PrimitiveSkill:
             "screw" : self._screw,
             "pour_from_top" : self._pour_from_top,
             "pour_from_side" : self._pour_from_side,
+            "iron" : self._iron,
             "reset_joints" : self._reset_joints,
         }
 
         with open('config/skill_config.json') as json_file:
             self.skill_dict = json.load(json_file)
             self.num_skills = len(self.skill_dict.keys())
-
-        # self.skills = {
-        #     "pick_from_top" : {
-        #         "num_params" : 3,
-        #         "skill" : self._pick_from_top,
-        #         "default_idx" : 0,
-        #     },
-        #     "pick_from_side" : {
-        #         "num_params" : 3,
-        #         "skill" : self._pick_from_side,
-        #         "default_idx" : 1,
-        #     },
-        #     "place_from_top" : {
-        #         "num_params" : 3,
-        #         "skill" : self._place_from_top,
-        #         "default_idx" : 2,
-        #     },
-        #     "place_from_side" : {
-        #         "num_params" : 3,
-        #         "skill" : self._place_from_side,
-        #         "default_idx" : 3,
-        #     },
-        #     "push_x" : {
-        #         "num_params" : 3,
-        #         "skill" : self._push_x,
-        #         "default_idx" : 4,
-        #     },
-        #     "push_z" : {
-        #         "num_params" : 3,
-        #         "skill" : self._push_z,
-        #         "default_idx" : 5,
-        #     },
-        #     "wipe_xy" : {
-        #         "num_params" : 6,
-        #         "skill" : self._wipe_xy,
-        #         "default_idx" : 6,
-        #     },
-        #     "draw_x" : {
-        #         "num_params" : 3,
-        #         "skill" : self._draw_x,
-        #         "default_idx" : 7,
-        #     },
-        #     "screw" : {
-        #         "num_params" : 4,
-        #         "skill" : self._screw,
-        #         "default_idx" : 8,
-        #     },
-        #     "pour_from_top" : {
-        #         "num_params" : 3,
-        #         "skill" : self._pour_from_top,
-        #         "default_idx" : 9,
-        #     },
-        #     "pour_from_side" : {
-        #         "num_params" : 3,
-        #         "skill" : self._pour_from_side,
-        #         "default_idx" : 10,
-
-        #     },
-        #     "reset_joints" : {
-        #         "num_params" : 0,
-        #         "skill" : self._reset_joints,
-        #         "default_idx" : 11,
-        #     },
-        # }
 
         # helper skills used internally by executable skills
         self.helper_skills = {
@@ -314,6 +260,30 @@ class PrimitiveSkill:
         ]
         self._execute_sequence(sequence)
 
+    def _pick_book(self, params):
+        """
+        Picks up object at specified position from side and rehomes
+
+        Args:
+            params (2-tuple of floats) : [goal_pos(xy)]
+        """
+        # define waypoints
+        goal_pos = params[:2]
+        goal_pos = [params[0], params[1], 0.17]
+        waypoint_side = np.array([goal_pos[0], goal_pos[1] + 0.25, goal_pos[2]])
+        waypoint_above = np.array([params[0], params[1], self.waypoint_height])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0)
+
+        sequence = [
+            [ "move_to", np.concatenate([waypoint_side, self.from_side_quat2, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.from_side_quat2, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint_above, self.from_side_quat2, [1, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
     def _place_from_top(self, params):
         """
         Places object at specified location with gripper pointing down
@@ -403,38 +373,6 @@ class PrimitiveSkill:
         ]
         self._execute_sequence(sequence)
 
-    # def _push_z(self, params):
-    #     """
-    #     Start from specified position with gripper pointing down, pushes in z direction by some delta, then rehomes
-
-    #     Args: 
-    #         params (5-tuple of floats) : [start_pos, dz, yaw_angle[deg]]
-    #     """
-
-    #     start_pos = params[:3]
-    #     dz = params[3]
-    #     yaw = params[4]
-    #     gripper_action = 1 # gripper is closed
-
-    #     goal_pos = [start_pos[0], start_pos[1], start_pos[2] + dz]
-    #     waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
-    #     self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
-
-    #     # convert euler to quat
-    #     from_top_euler = U.quat2euler(self.from_top_quat)
-    #     goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-    #     goal_quat = U.euler2quat(goal_euler)
-
-    #     sequence = [
-    #         [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 1]]) ], # to start pos
-    #         [ "move_to", np.concatenate([goal_pos, goal_quat, [gripper_action, 1]]) ], # move in z by dz
-    #         [ "pause", [gripper_action, 1.0] ], # pause for 1 sec
-    #         [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
-    #         [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
-    #         [ "rehome", self.rehome_q ],
-    #     ]
-    #     self._execute_sequence(sequence)
-
     def _push_xy(self, params):
         """
         Start from specified position with gripper pointing down, pushes in x and y direction by specified delta, then rehomes
@@ -490,6 +428,57 @@ class PrimitiveSkill:
             [ "rehome", self.rehome_q ],        
         ]
         self._execute_sequence(sequence)
+    
+    def _push_book(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in y direction by 25cm, then rehomes
+
+        Args: 
+            params (2-tuple of floats) : [start_pos(xy)]
+        """
+        start_pos = params[:2]
+        start_pos = [start_pos[0], start_pos[1], 0.175]
+        gripper_action = 1 # gripper is closed
+
+
+        goal_pos = [start_pos[0], start_pos[1]+0.25, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "gripper_action", [1.] ], # close gripper
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [gripper_action, 0]]) ], # move in y
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],        
+        ]
+        self._execute_sequence(sequence)
+
+    def _push_y(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in y direction by 25cm, then rehomes
+
+        Args: 
+            params (3-tuple of floats) : [start_pos(xy)]
+        """
+        start_pos = params[:3]
+        gripper_action = 1 # gripper is closed
+
+
+        goal_pos = [start_pos[0], start_pos[1]+0.35, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "gripper_action", [1.] ], # close gripper
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [gripper_action, 0]]) ], # move in y
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],        
+        ]
+        self._execute_sequence(sequence)
 
     def _wipe_xy(self, params):
         """
@@ -539,17 +528,17 @@ class PrimitiveSkill:
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
-        # convert euler to quat
-        from_top_euler = U.quat2euler(self.from_top_quat)
-        goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        goal_quat = U.euler2quat(goal_euler)
+        # # convert euler to quat
+        # from_top_euler = U.quat2euler(self.from_top_quat)
+        # goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
+        # goal_quat = U.euler2quat(goal_euler)
 
         sequence = [
-            [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
-            [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 0]]) ], # to start pos
-            [ "move_to", np.concatenate([end_pos, goal_quat, [gripper_action, 1]]) ], # move by delta
-            [ "move_to", np.concatenate([start_pos, goal_quat, [gripper_action, 1]]) ], # back to start pos
-            [ "move_to", np.concatenate([waypoint_above, goal_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 0]]) ], # to start pos
+            [ "move_to", np.concatenate([end_pos, self.from_top_quat, [gripper_action, 1]]) ], # move by delta
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # back to start pos
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ], 
         ]
@@ -674,6 +663,32 @@ class PrimitiveSkill:
             [ "rehome", self.rehome_q ],
         ]
 
+        self._execute_sequence(sequence)
+
+    def _iron(self, params):
+        """
+        Same as wipe_y but with fixed z for ironing task
+
+        Args:
+            params (2-tuple of floats) : [start_pos(xy)]
+        """
+        start_pos = [params[0], params[1], 0.09]
+        gripper_action = 1 # gripper is closed\
+        dy = 0.3
+
+        end_pos = [start_pos[0], start_pos[1] + dy, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 0]]) ], # to start pos
+            [ "move_to", np.concatenate([end_pos, self.from_top_quat, [gripper_action, 1]]) ], # move by delta
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # back to start pos
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ], 
+        ]
         self._execute_sequence(sequence)
 
     def _reset_joints(self, params=None):

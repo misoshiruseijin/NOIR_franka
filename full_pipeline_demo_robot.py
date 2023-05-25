@@ -39,7 +39,11 @@ class FullPipelineDemo:
         self.canvas = None # TODO - not needed if not using tkinter UI
         self.window = None # TODO - not needed if not using tkinter UI
         self.detection_utils = DetectionUtils()
-        self.env = RealRobotEnvMulti(reset_joints_on_init=not resume)
+        reset_joints_on_init = False if resume else True
+        self.env = RealRobotEnvMulti(
+            env_name=env_name,
+            reset_joints_on_init=reset_joints_on_init,
+        )
         self.img_obs = self.env.get_image_observations(save_images=True)
 
         with open('config/task_obj_skills.json') as json_file:
@@ -146,7 +150,7 @@ class FullPipelineDemo:
             if "z" in param_names:
                 ############### choose z ###############
                 # discretize z coordinate and save image visualizing the discrete points
-                pix_pts, world_pts = self.detection_utils.get_points_on_z(world_xy=world_xy, img_array=sideview_img, camera_id=side_camera_id, max_height=0.3)
+                pix_pts, world_pts = self.detection_utils.get_points_on_z(world_xy=world_xy, img_array=sideview_img, camera_id=side_camera_id, max_height=0.75)
                 
                 projection_img = cv2.imread("projections.png")
                 projection_pil_img = Image.fromarray(projection_img[:,:,::-1])

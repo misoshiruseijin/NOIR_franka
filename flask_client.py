@@ -79,22 +79,62 @@ def check_skill_params_ready():
     url = f"http://{SERVER_IP}:{PORT}/api/action"
     response = requests.get(url)
     if response.status_code == 200:
-        code = response.json()["action"]
-        # assert code in [0, 1, 2], f"inproper code {code} received"
-        url = f"http://{SERVER_IP}:{PORT}/api/resetparams"
-        reset_response = requests.get(url)
-        if reset_response.status_code == 200:
-            pass
-            # print("params reset successfully")
-        else:
-            print("params not reset!!")
-        # print("Received Code :", code)
-        return code
+        data = response.json()["action"]
+        print("Received action")
     else:
-        return None
+        print("No action received")
+    return data
+
+def reset_action():
+    url = f"http://{SERVER_IP}:{PORT}/api/resetparams"
+    reset_response = requests.get(url)
+    if reset_response.status_code == 200:
+        print("params reset successfully")
+    else:
+        print("params not reset!!")
+
+# # Checks if skill and params are ready
+# def check_skill_params_ready():
+#     url = f"http://{SERVER_IP}:{PORT}/api/action"
+#     response = requests.get(url)
+#     if response.status_code == 200:
+#         code = response.json()["action"]
+
+#         # assert code in [0, 1, 2], f"inproper code {code} received"
+#         url = f"http://{SERVER_IP}:{PORT}/api/resetparams"
+#         reset_response = requests.get(url)
+#         if reset_response.status_code == 200:
+#             pass
+#             # print("params reset successfully")
+#         else:
+#             print("params not reset!!")
+#         # print("Received Code :", code)
+#         return code
+#     else:
+#         return None
+
+# def get_images():
+#     response = requests.get(f"{base_url}:{port}/api/getimgs")
+#     # breakpoint()
+#     if response.status_code == 200:
+#         data = response.json()['data']
+#         print("Images Received!")        
+#     else:
+#         print("Images not received.")
+#     return data
+
+# def reset_images():
+#     reset_response = requests.get(f"{base_url}:{port}/api/resetimgs")
+#     if reset_response.status_code == 200:
+#         print("images reset successfully")
+#     else:
+#         print("images not reset!!")
+
 
 def main(args):
 
+    reset_action()
+    
     env_name = args.env
     subject = args.subject
     with open('config/task_obj_skills.json') as json_file:
@@ -114,6 +154,7 @@ def main(args):
     # initialize environments and gety initial observation
     resset_joints = False if args.resume else True
     env = RealRobotEnvMulti(
+        env_name=env_name,
         reset_joints_on_init=resset_joints,
     )
     if resset_joints:
@@ -139,16 +180,14 @@ def main(args):
         action = None
         while action is None:
             action = check_skill_params_ready()
-            # action = np.zeros(env.num_skills).tolist()
-            # action[5] = 1
-            # action += [0.5, 0.1, 0.3]
-            # print("No action received")
-            time.sleep(1)
+            time.sleep(0.1)
 
+        reset_action()
         decode_end_time = time.time()
         
         # take action
         print("Action received. Executing ", action)
+        start_skill_time = time.time()
         obs, reward, done, info = env.step(action)
         step_end_time = time.time()
         
@@ -158,6 +197,7 @@ def main(args):
         logging.critical(f"Params : {params}")
         logging.critical(f"Time this step : {step_end_time - step_start_time}")
         logging.critical(f"EEG response time : {decode_end_time - decode_start_time}")
+        logging.critical(f"Skill execution time : {step_end_time - start_skill_time}")
         logging.critical(f"Time elapsed : {step_end_time - eps_start_time}")
         
         print("Time this step: ", step_end_time - step_start_time)

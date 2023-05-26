@@ -9,17 +9,17 @@
         "default_idx" : 1,
         "params" : ["xy", "z"]
     },
-    "pick_book" : {
-        "num_params" : 2,
-        "default_idx" : 2,
-        "params" : ["xy"]
-    },
     "place_from_top" : {
+        "num_params" : 3,
+        "default_idx" : 2,
+        "params" : ["xy", "z"]
+    },
+    "place_from_side" : {
         "num_params" : 3,
         "default_idx" : 3,
         "params" : ["xy", "z"]
     },
-    "place_from_side" : {
+    "pick_from_side2" : {
         "num_params" : 3,
         "default_idx" : 4,
         "params" : ["xy", "z"]
@@ -55,24 +55,14 @@
         "default_idx" : 10,
         "params" : ["xy", "z", "yaw"]
     },
-    "pour_from_top" : {
+    "pour_from_side" : {
         "num_params" : 3,
         "default_idx" : 11,
         "params" : ["xy", "z"]
     },
-    "pour_from_side" : {
+    "wipe_y" : {
         "num_params" : 3,
         "default_idx" : 12,
         "params" : ["xy", "z"]
-    },
-    "wipe_y" : {
-        "num_params" : 3,
-        "default_idx" : 13,
-        "params" : ["xy", "z"]
-    },
-    "push_book" : {
-        "num_params" : 2,
-        "default_idx" : 14,
-        "params" : ["xy"]
     }
 }

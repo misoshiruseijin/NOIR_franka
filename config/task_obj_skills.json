@@ -29,11 +29,12 @@
     },
     "Bookshelf" : {
         "purple handle" : ["pick_from_top", "pick_from_side"],
-        "book" : ["pick_from_top", "pick_book", "push_book"],
-        "none" : ["place_from_top", "place_from_diag", "wipe_y"]
+        "book" : ["pick_from_top", "pick_from_side2", "push_y", "push_x"],
+        "none" : ["place_from_top", "place_from_diag", "wipe_y", "push_y"]
     },
     "Basket" : {
         "banana" : ["pick_from_top", "pick_from_side", "push_y"],
+        "red bandana" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
         "none" : ["place_from_top", "place_from_side", "place_from_diag"]
     },
     "Featherdust" : {
@@ -55,7 +56,11 @@
         "none" : ["place_from_top", "place_from_side", "push_x"]
     },
     "Ironing" : {
-        "mini iron" : ["pick_from_top", "pick_from_side", "push_y"],
+        "mini iron" : ["pick_from_top", "pick_from_side", "pick_from_side2"],
         "none" : ["push_y", "place_from_top", "place_from_side", "push_x"]
+    },
+    "CleaningSpill" : {
+        "red napkins" : ["pick_from_top", "pick_from_side", "pick_from_side2"],
+        "none" : ["place_from_top", "push_x", "push_y", "wipe_y"]
     }
 }

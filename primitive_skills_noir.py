@@ -98,6 +98,7 @@ class PrimitiveSkill:
             "pick_from_top" : self._pick_from_top,
             "pick_from_side" : self._pick_from_side,
             "pick_book" : self._pick_book,
+            "pick_from_side2" : self._pick_from_side2,
             "place_from_top" : self._place_from_top,
             "place_from_side" : self._place_from_side,
             "place_from_diag" : self._place_from_diag,
@@ -284,6 +285,29 @@ class PrimitiveSkill:
         ]
         self._execute_sequence(sequence)
 
+    def _pick_from_side2(self, params):
+        """
+        Picks up object at specified position from side and rehomes
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint_side = np.array([goal_pos[0], goal_pos[1] + 0.25, goal_pos[2]])
+        waypoint_above = np.array([params[0], params[1], self.waypoint_height])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0)
+
+        sequence = [
+            [ "move_to", np.concatenate([waypoint_side, self.from_side_quat2, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.from_side_quat2, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint_above, self.from_side_quat2, [1, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
     def _place_from_top(self, params):
         """
         Places object at specified location with gripper pointing down
@@ -415,7 +439,7 @@ class PrimitiveSkill:
         gripper_action = 1 # gripper is closed
 
 
-        goal_pos = [self.workspace_limits["x"][1], start_pos[1], start_pos[2]]
+        goal_pos = [self.workspace_limits["x"][1]+0.05, start_pos[1], start_pos[2]]
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
@@ -522,7 +546,7 @@ class PrimitiveSkill:
         """
         start_pos = params[:3]
         gripper_action = 1 # gripper is closed\
-        dy = 0.25
+        dy = 0.4
 
         end_pos = [start_pos[0], start_pos[1] + dy, start_pos[2]]
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]

@@ -16,9 +16,9 @@
         "none" : ["place_from_top", "place_from_side", "wipe_xy"]
     },
     "MealPrep" : {
-        "tomato slice" : ["pick_from_top", "pick_from_side", "push_x"],
-        "lettuce" : ["pick_from_top", "pick_from_side", "push_x"],
-        "bread" : ["pick_from_top", "pick_from_side", "push_x"],
+        "tomato slice" : ["pick_from_top", "pick_from_side", "push_y", "push_z"],
+        "lettuce" : ["pick_from_top", "pick_from_side", "push_y", "push_z"],
+        "bread" : ["pick_from_top", "pick_from_side", "push_y", "push_z"],
         "none" : ["place_from_top", "place_from_side", "place_from_diag"]
     },
     "Tea" : {

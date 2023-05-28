@@ -64,5 +64,30 @@
         "num_params" : 3,
         "default_idx" : 12,
         "params" : ["xy", "z"]
+    },
+    "pour" : {
+        "num_params" : 3,
+        "default_idx" : 13,
+        "params" : ["xy", "z"]
+    },
+    "pull_up_and_right1" : {
+        "num_params" : 3,
+        "default_idx" : 14,
+        "params" : ["xy", "z"]
+    },
+    "pull_up_and_left1" : {
+        "num_params" : 3,
+        "default_idx" : 15,
+        "params" : ["xy", "z"]
+    },
+    "pull_up_and_right2" : {
+        "num_params" : 3,
+        "default_idx" : 16,
+        "params" : ["xy", "z"]
+    },
+    "pull_up_and_left2" : {
+        "num_params" : 3,
+        "default_idx" : 17,
+        "params" : ["xy", "z"]
     }
 }

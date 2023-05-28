@@ -62,5 +62,22 @@
     "CleaningSpill" : {
         "red napkins" : ["pick_from_top", "pick_from_side", "pick_from_side2"],
         "none" : ["place_from_top", "push_x", "push_y", "wipe_y"]
+    },
+    "PutAwayToys" : {
+        "pink bunny toy" : ["pick_from_top", "pick_from_side", "pick_from_side2", "push_x"],
+        "green frog toy" : ["pick_from_top", "pick_from_side", "pick_from_side2", "push_x"],
+        "yellow bird toy" : ["pick_from_top", "pick_from_side", "pick_from_side2", "push_x"],
+        "none" : ["place_from_top", "place_from_side", "place_from_diag", "push_y"]
+    },
+    "OpenGiftBox" : {
+        "white card" : ["pick_from_top", "pick_from_side2", "push_z"],
+        "blue ribbon" : ["pull_up_and_right1", "pull_up_and_left1", "pull_up_and_right2", "pull_up_and_left2"],
+        "pink bundled jump rope" : ["pick_from_top", "pick_from_side", "push_y"],
+        "none" : ["place_from_top", "place_from_diag", "push_x"]
+    },
+    "Pasta" : {
+        "light blue bowl" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
+        "white pot handle" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
+        "none" : ["place_from_top", "pour", "place_from_diag"]
     }
 }

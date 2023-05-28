@@ -60,6 +60,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--prefix", type=str, default="")
     parser.add_argument("--stream", action="store_true")
-    parser.add_argument("--id", type=int, default=None)
+    parser.add_argument("--id", type=int, default=2)
     args = parser.parse_args()
     main(args)

@@ -70,6 +70,7 @@ class PrimitiveSkill:
         self.from_side_quat = [0.508257, 0.49478495, -0.49082687, 0.5059166] # quat when eef is pointing to right of robot 
         self.from_side_quat2 = [0.6941543, 0.02806479, 0.01957926, 0.7190123] # used for pick from side 2
         self.from_diag_quat = [0.9250823, 0.01997216, 0.01295406, 0.37901983]
+        self.horizontal_quat = [0.6939173, 0.7193049, 0.02093083, 0.02532321]
 
         if use_high_reset_pos:
             from_top = [0.01644747, -0.44936592, -0.0032551, -1.98056433, -0.03537027, 1.52042939, 0.82159965]
@@ -96,6 +97,7 @@ class PrimitiveSkill:
         # executable skills
         self.skills = {
             "pick_from_top" : self._pick_from_top,
+            "pick_from_top2" : self._pick_from_top2,
             "pick_from_side" : self._pick_from_side,
             "pick_book" : self._pick_book,
             "pick_from_side2" : self._pick_from_side2,
@@ -113,6 +115,13 @@ class PrimitiveSkill:
             "pour_from_top" : self._pour_from_top,
             "pour_from_side" : self._pour_from_side,
             "iron" : self._iron,
+            "pull_x" : self._pull_x,
+            "pull_y" : self._pull_y,
+            "pour" : self._pour,
+            "pull_up_and_right1" : self._pull_up_and_right1,
+            "pull_up_and_left1" : self._pull_up_and_left1,
+            "pull_up_and_right2" : self._pull_up_and_right2,
+            "pull_up_and_left2" : self._pull_up_and_left2,
             "reset_joints" : self._reset_joints,
         }
 
@@ -233,6 +242,28 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [-1, 1]]) ], # to pick pos
             [ "gripper_action", [1] ], # close gripper
             [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
+    def _pick_from_top2(self, params):
+        """
+        Picks up object at specified position from top and rehomes
+
+        Args:
+            params (3-tuple of floats) : [goal_pos]
+        """
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+         
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.horizontal_quat, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.horizontal_quat, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint, self.horizontal_quat, [1, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],
         ]
@@ -453,6 +484,127 @@ class PrimitiveSkill:
         ]
         self._execute_sequence(sequence)
     
+    def _pull_x(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in x direction to the end of the workspace, then rehomes
+
+        Args: 
+            params (6-tuple of floats) : [start_pos]
+        """
+        start_pos = params[:3]
+        gripper_action = 1 # gripper is closed
+
+        goal_pos = [self.workspace_limits["x"][0]-0.1, start_pos[1], start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "gripper_action", [1.] ], # close gripper
+            [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [gripper_action, 0]]) ], # move by delta
+            [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],        
+        ]
+        self._execute_sequence(sequence)
+
+    def _pull_y(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in x direction to the end of the workspace, then rehomes
+
+        Args: 
+            params (6-tuple of floats) : [start_pos]
+        """
+        start_pos = params[:3]
+        gripper_action = 1 # gripper is closed
+
+        goal_pos = [start_pos[0], start_pos[1]-0.35, start_pos[2]]
+        waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "gripper_action", [1.] ], # close gripper
+            [ "move_to", np.concatenate([start_pos, self.horizontal_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([goal_pos, self.horizontal_quat, [gripper_action, 0]]) ], # move by delta
+            [ "move_to", np.concatenate([waypoint_above, self.horizontal_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],        
+        ]
+        self._execute_sequence(sequence)
+
+    def _pull_up_and_left1(self, params):
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        waypoint2 = np.array([params[0], params[1]-0.25, 0.35])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0) 
+         
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.from_top_quat, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint2, self.from_top_quat, [1, 0]]) ], # pull
+            [ "gripper_action", [-1]], # release gripper
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
+    def _pull_up_and_right1(self, params):
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        waypoint2 = np.array([params[0], params[1]+0.25, 0.35])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0) 
+         
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.from_top_quat, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint2, self.from_top_quat, [1, 0]]) ], # pull
+            [ "gripper_action", [-1]], # release gripper
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
+    def _pull_up_and_left2(self, params):
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        waypoint2 = np.array([params[0], params[1]-0.25, 0.35])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0) 
+         
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.horizontal_quat, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.horizontal_quat, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint2, self.horizontal_quat, [1, 0]]) ], # pull
+            [ "gripper_action", [-1]], # release gripper
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
+    def _pull_up_and_right2(self, params):
+        # define waypoints
+        goal_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+        waypoint2 = np.array([params[0], params[1]+0.25, 0.35])
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], -1.0) 
+         
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.horizontal_quat, [-1, 1]]) ], # to waypoint
+            [ "move_to", np.concatenate([goal_pos, self.horizontal_quat, [-1, 1]]) ], # to pick pos
+            [ "gripper_action", [1] ], # close gripper
+            [ "move_to", np.concatenate([waypoint2, self.horizontal_quat, [1, 0]]) ], # pull
+            [ "gripper_action", [-1]], # release gripper
+            [ "pause", np.array([-1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],
+        ]
+        self._execute_sequence(sequence)
+
+
     def _push_book(self, params):
         """
         Start from specified position with gripper pointing down, pushes in y direction by 25cm, then rehomes
@@ -633,7 +785,35 @@ class PrimitiveSkill:
             [ "rehome", self.rehome_q ], 
         ]
         self._execute_sequence(sequence)
-    
+        
+    def _pour(self, params):
+        """
+        Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.
+        Assumes robot is holding a relevant object from the top
+
+        Args:
+            params (3-tuple of floats) : [eef_pos] 
+        """
+        # define waypoints
+        pour_pos = params[:3]
+        waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+        # goal quat
+        # goal_quat = [0.8490147, 0.01116254, -0.5269386, 0.0372193]
+        goal_quat = [-0.47400907, -0.00888116, 0.0487085, 0.87912697]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+        sequence = [
+            [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
+            [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 1]]) ], # to grasp pos
+            [ "move_to", np.concatenate([pour_pos, goal_quat, [1, 1]]) ], # tilt
+            [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 0]]) ], # rotate back
+            [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ], 
+        ]
+        self._execute_sequence(sequence)
+
     def _pour_from_top(self, params):
         """
         Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.

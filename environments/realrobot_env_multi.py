@@ -68,7 +68,7 @@ class RealRobotEnvMulti(gym.Env):
             self.camera_interfaces[id].start()
 
         print("Environment name: ", env_name)
-        if env_name in ["Bookshelf"]:
+        if env_name in ["Bookshelf", "OpenGiftBox"]:
             use_higher_reset_pos = True
             self.waypoint_height = 0.65
             print("Using higher reset and waypoint positions")

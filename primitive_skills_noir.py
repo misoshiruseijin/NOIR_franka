@@ -799,14 +799,15 @@ class PrimitiveSkill:
         waypoint = np.array([params[0], params[1], self.waypoint_height])
 
         # goal quat
-        # goal_quat = [0.8490147, 0.01116254, -0.5269386, 0.0372193]
-        goal_quat = [-0.47400907, -0.00888116, 0.0487085, 0.87912697]
+        # goal_quat = [-0.47400907, -0.00888116, 0.0487085, 0.87912697]
+        goal_quat = [-0.26835766,  0.0294289,   0.01814095,  0.9626988]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
         sequence = [
             [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
             [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 1]]) ], # to grasp pos
             [ "move_to", np.concatenate([pour_pos, goal_quat, [1, 1]]) ], # tilt
+            [ "pause", np.array([1.0, 3.0]) ], # pause to let content out
             [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 0]]) ], # rotate back
             [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers

@@ -3,7 +3,7 @@
         "slice of bread" : ["pick_from_top", "pick_from_side", "push_x"],
         "dark brown handle" : ["pick_from_top", "pick_from_side", "push_x"],
         "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "place_from_diag"]
+        "none" : ["place_from_top", "place_from_side", "place_from_diag", "pour_from_side"]
     },
     "TableSetting" : {
         "light blue bowl" : ["pick_from_top", "pick_from_side", "push_x"],

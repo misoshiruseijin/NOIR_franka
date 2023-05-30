@@ -1,6 +1,6 @@
 {
     "Breakfast" : {
-        "slice of bread" : ["pick_from_top", "pick_from_side", "push_x"],
+        "slice of bread" : ["pick_from_top", "pick_from_side", "pick_from_side2", "push_x"],
         "dark brown handle" : ["pick_from_top", "pick_from_side", "push_x"],
         "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
         "none" : ["place_from_top", "place_from_side", "place_from_diag", "pour_from_side"]
@@ -46,9 +46,9 @@
         "none" : ["place_from_top", "push_x", "push_z"]
     },
     "Tictactoe" : {
-        "dry erase marker" : [],
-        "dark blue eraser" : [],
-        "none" : []
+        "red block" : ["pick_from_top", "pick_from_side"],
+        "dark blue eraser" : ["pick_from_top", "pick_from_top2"],
+        "none" : ["place_from_top", "place_from_side", "wipe_y", "draw_x"]
     },
     "Sweeping" : {
         "red block" : ["pick_from_top", "pick_from_side", "push_x"],
@@ -77,7 +77,8 @@
     },
     "Pasta" : {
         "light blue bowl" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
-        "white pot handle" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
-        "none" : ["place_from_top", "pour", "place_from_diag"]
+        "white handle" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
+        "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
+        "none" : ["place_from_top", "place_from_side", "pour", "pour_from_side"]
     }
 }

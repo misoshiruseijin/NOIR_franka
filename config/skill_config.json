@@ -89,5 +89,10 @@
         "num_params" : 3,
         "default_idx" : 17,
         "params" : ["xy", "z"]
+    },
+    "pick_from_top2" : {
+        "num_params" : 3,
+        "default_idx" : 18,
+        "params" : ["xy", "z"]
     }
 }

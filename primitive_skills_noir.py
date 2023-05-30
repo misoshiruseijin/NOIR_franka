@@ -114,10 +114,10 @@ class PrimitiveSkill:
             "screw" : self._screw,
             "pour_from_top" : self._pour_from_top,
             "pour_from_side" : self._pour_from_side,
+            "pour" : self._pour,
             "iron" : self._iron,
             "pull_x" : self._pull_x,
             "pull_y" : self._pull_y,
-            "pour" : self._pour,
             "pull_up_and_right1" : self._pull_up_and_right1,
             "pull_up_and_left1" : self._pull_up_and_left1,
             "pull_up_and_right2" : self._pull_up_and_right2,
@@ -785,7 +785,7 @@ class PrimitiveSkill:
             [ "rehome", self.rehome_q ], 
         ]
         self._execute_sequence(sequence)
-        
+    
     def _pour(self, params):
         """
         Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.
@@ -813,7 +813,35 @@ class PrimitiveSkill:
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ], 
         ]
-        self._execute_sequence(sequence)
+        self._execute_sequence(sequence)        
+    # def _pour(self, params):
+    #     """
+    #     Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.
+    #     Assumes robot is holding a relevant object from the top
+
+    #     Args:
+    #         params (3-tuple of floats) : [eef_pos] 
+    #     """
+    #     # define waypoints
+    #     pour_pos = params[:3]
+    #     waypoint = np.array([params[0], params[1], self.waypoint_height])
+
+    #     # goal quat
+    #     # goal_quat = [-0.47400907, -0.00888116, 0.0487085, 0.87912697]
+    #     goal_quat = [-0.26835766,  0.0294289,   0.01814095,  0.9626988]
+    #     self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+    #     sequence = [
+    #         [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
+    #         [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 1]]) ], # to grasp pos
+    #         [ "move_to", np.concatenate([pour_pos, goal_quat, [1, 1]]) ], # tilt
+    #         [ "pause", np.array([1.0, 3.0]) ], # pause to let content out
+    #         [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 0]]) ], # rotate back
+    #         [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
+    #         [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+    #         [ "rehome", self.rehome_q ], 
+    #     ]
+    #     self._execute_sequence(sequence)
 
     def _pour_from_top(self, params):
         """
@@ -1020,6 +1048,7 @@ class PrimitiveSkill:
 
         # if gripper action has not been completed, take gripper action
         if not self._get_gripper_state() == gripper_action:
+            print("HERE")
             self._gripper_action([gripper_action])
             
     def _rehome_pos_quat(self, params):
@@ -1057,7 +1086,7 @@ class PrimitiveSkill:
                 controller_cfg=self.controller_config,
             )
 
-    def _get_gripper_state(self, thresh=0.04):
+    def _get_gripper_state(self, thresh=0.055):
         """
         Checks whether gripper is closed (used during interrupt)
         Args:

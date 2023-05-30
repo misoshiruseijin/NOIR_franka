@@ -94,5 +94,10 @@
         "num_params" : 3,
         "default_idx" : 18,
         "params" : ["xy", "z"]
+    },
+    "erase" : {
+        "num_params" : 3,
+        "default_idx" : 19,
+        "params" : ["xy", "z"]
     }
 }

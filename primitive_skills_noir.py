@@ -122,6 +122,7 @@ class PrimitiveSkill:
             "pull_up_and_left1" : self._pull_up_and_left1,
             "pull_up_and_right2" : self._pull_up_and_right2,
             "pull_up_and_left2" : self._pull_up_and_left2,
+            "erase" : self._erase,
             "reset_joints" : self._reset_joints,
         }
 
@@ -469,8 +470,8 @@ class PrimitiveSkill:
         start_pos = params[:3]
         gripper_action = 1 # gripper is closed
 
-
-        goal_pos = [self.workspace_limits["x"][1]+0.05, start_pos[1], start_pos[2]]
+        goal_pos = [0.75, start_pos[1], start_pos[2]]
+        # goal_pos = [self.workspace_limits["x"][1]+0.05, start_pos[1], start_pos[2]]
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
@@ -651,6 +652,44 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
             [ "move_to", np.concatenate([goal_pos, self.from_top_quat, [gripper_action, 0]]) ], # move in y
             [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
+            [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
+            [ "rehome", self.rehome_q ],        
+        ]
+        self._execute_sequence(sequence)
+
+    def _erase(self, params):
+        """
+        Start from specified position with gripper pointing down, pushes in x direction to the end of the workspace, then rehomes
+
+        Args: 
+            params (6-tuple of floats) : [start_pos]
+        """
+        x, y, z =  params[:3]
+        delta_y = 0.03
+        end_x = 0.75
+        start_pos1 = np.array([x, y, z])
+        start_pos2 = np.array([x, y+delta_y, z])
+        start_pos3 = np.array([x, y+2*delta_y, z])
+        end_pos1 = np.array([end_x, y, z])
+        end_pos2 = np.array([end_x, y+delta_y, z])
+        end_pos3 = np.array([end_x, y+2*delta_y, z])
+        wp_h = np.array([0,0,0.1])
+        gripper_action = 1 # gripper is closed
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+        sequence = [
+            [ "gripper_action", [1.] ], # close gripper
+            [ "move_to", np.concatenate([start_pos1+wp_h, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([start_pos1, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([end_pos1, self.from_top_quat, [gripper_action, 0]]) ], # move by delta
+            [ "move_to", np.concatenate([end_pos1+wp_h, self.from_top_quat, [gripper_action, 0]]) ], 
+            [ "move_to", np.concatenate([start_pos2+wp_h, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([start_pos2, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([end_pos2, self.from_top_quat, [gripper_action, 0]]) ], # move by delta
+            [ "move_to", np.concatenate([end_pos2+wp_h, self.from_top_quat, [gripper_action, 0]]) ], 
+            [ "move_to", np.concatenate([start_pos3+wp_h, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([start_pos3, self.from_top_quat, [gripper_action, 1]]) ], # to start pos
+            [ "move_to", np.concatenate([end_pos3, self.from_top_quat, [gripper_action, 0]]) ], # move by delta
+            [ "move_to", np.concatenate([end_pos3+np.array([0,0,0.1]), self.from_top_quat, [gripper_action, 0]]) ], 
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ],        
         ]

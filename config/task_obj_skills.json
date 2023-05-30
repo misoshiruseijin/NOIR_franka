@@ -48,7 +48,7 @@
     "Tictactoe" : {
         "red block" : ["pick_from_top", "pick_from_side"],
         "dark blue eraser" : ["pick_from_top", "pick_from_top2"],
-        "none" : ["place_from_top", "place_from_side", "wipe_y", "draw_x"]
+        "none" : ["place_from_top", "place_from_side", "push_x", "draw_x"]
     },
     "Sweeping" : {
         "red block" : ["pick_from_top", "pick_from_side", "push_x"],

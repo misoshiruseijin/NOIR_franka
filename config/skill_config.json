@@ -95,9 +95,14 @@
         "default_idx" : 18,
         "params" : ["xy", "z"]
     },
-    "erase" : {
+    "grate" : {
         "num_params" : 3,
         "default_idx" : 19,
+        "params" : ["xy", "z"]
+    },
+    "pour_from_top" : {
+        "num_params" : 3,
+        "default_idx" : 20,
         "params" : ["xy", "z"]
     }
 }

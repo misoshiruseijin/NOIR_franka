@@ -123,6 +123,7 @@ class PrimitiveSkill:
             "pull_up_and_right2" : self._pull_up_and_right2,
             "pull_up_and_left2" : self._pull_up_and_left2,
             "erase" : self._erase,
+            "grate" : self._grate,
             "reset_joints" : self._reset_joints,
         }
 
@@ -743,11 +744,6 @@ class PrimitiveSkill:
         waypoint_above = [start_pos[0], start_pos[1], self.waypoint_height]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
-        # # convert euler to quat
-        # from_top_euler = U.quat2euler(self.from_top_quat)
-        # goal_euler = np.array([from_top_euler[0], from_top_euler[1], np.radians(yaw)]) # update yaw component
-        # goal_quat = U.euler2quat(goal_euler)
-
         sequence = [
             [ "move_to", np.concatenate([waypoint_above, self.from_top_quat, [gripper_action, 0]]) ], # to waypoint
             [ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 0]]) ], # to start pos
@@ -757,6 +753,36 @@ class PrimitiveSkill:
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "rehome", self.rehome_q ], 
         ]
+        self._execute_sequence(sequence)
+
+    def _grate(self, params):
+        """
+        Wipes a surface by starting at specified position, moving in y direction by a fixed amount in a wiping motion, then rehomes
+        
+        Args:
+            params (3-tuple of floats) : [start_pos]
+        """
+        start_pos = params[:3]
+        gripper_action = 1 # gripper is closed\
+        dy = 0.1
+
+        end_pos = [start_pos[0], start_pos[1] + dy, start_pos[2]]
+        wp1 = [start_pos[0], start_pos[1], 0.2]
+        wp2 = [end_pos[0], end_pos[1], 0.2]
+        self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
+
+
+        n_scrapes = 5
+        sequence = []
+
+        for _ in range(n_scrapes):
+            sequence.append([ "move_to", np.concatenate([wp1, self.from_top_quat, [gripper_action, 0]]) ]), # to above start position
+            sequence.append([ "move_to", np.concatenate([start_pos, self.from_top_quat, [gripper_action, 1]]) ])
+            sequence.append([ "move_to", np.concatenate([end_pos, self.from_top_quat, [gripper_action, 1]]) ])
+            sequence.append([ "move_to", np.concatenate([wp2, self.from_top_quat, [gripper_action, 1]]) ])
+
+        sequence.append([ "pause", np.array([1.0, 0.5]) ])
+        sequence.append([ "rehome", self.rehome_q ])
         self._execute_sequence(sequence)
 
     def _draw_x(self, params):
@@ -853,34 +879,6 @@ class PrimitiveSkill:
             [ "rehome", self.rehome_q ], 
         ]
         self._execute_sequence(sequence)        
-    # def _pour(self, params):
-    #     """
-    #     Pouring motion. Tilts end effector by fixed amount while maintaining end effector position at specified location.
-    #     Assumes robot is holding a relevant object from the top
-
-    #     Args:
-    #         params (3-tuple of floats) : [eef_pos] 
-    #     """
-    #     # define waypoints
-    #     pour_pos = params[:3]
-    #     waypoint = np.array([params[0], params[1], self.waypoint_height])
-
-    #     # goal quat
-    #     # goal_quat = [-0.47400907, -0.00888116, 0.0487085, 0.87912697]
-    #     goal_quat = [-0.26835766,  0.0294289,   0.01814095,  0.9626988]
-    #     self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
-
-    #     sequence = [
-    #         [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
-    #         [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 1]]) ], # to grasp pos
-    #         [ "move_to", np.concatenate([pour_pos, goal_quat, [1, 1]]) ], # tilt
-    #         [ "pause", np.array([1.0, 3.0]) ], # pause to let content out
-    #         [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 0]]) ], # rotate back
-    #         [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
-    #         [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers
-    #         [ "rehome", self.rehome_q ], 
-    #     ]
-    #     self._execute_sequence(sequence)
 
     def _pour_from_top(self, params):
         """
@@ -902,6 +900,7 @@ class PrimitiveSkill:
             [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
             [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 1]]) ], # to grasp pos
             [ "move_to", np.concatenate([pour_pos, goal_quat, [1, 1]]) ], # tilt
+            [ "pause", np.array([1.0, 2.0]) ], # add short pause to prevent sudden stop from swithing controllers
             [ "move_to", np.concatenate([pour_pos, self.from_top_quat, [1, 0]]) ], # rotate back
             [ "move_to", np.concatenate([waypoint, self.from_top_quat, [1, 0]]) ], # to waypoint
             [ "pause", np.array([1.0, 0.5]) ], # add short pause to prevent sudden stop from swithing controllers

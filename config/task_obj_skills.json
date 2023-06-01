@@ -22,10 +22,10 @@
         "none" : ["place_from_top", "place_from_side", "place_from_diag"]
     },
     "Tea" : {
-        "triangular teabag" : ["pick_from_top", "pick_from_side", "push_x"],
+        "triangular teabag" : ["pick_from_top", "pick_from_top2", "pick_from_side", "push_x"],
         "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
-        "red mug" : ["pick_from_top", "pick_from_side", "push_x"],
-        "none" : ["place_from_top", "place_from_side", "pour_from_side"]
+        "gray mug" : ["pick_from_top", "pick_from_side", "push_x"],
+        "none" : ["place_from_top", "place_from_side", "pour_from_side", "pour_from_top"]
     },
     "Bookshelf" : {
         "purple handle" : ["pick_from_top", "pick_from_side"],
@@ -47,8 +47,9 @@
     },
     "Tictactoe" : {
         "red block" : ["pick_from_top", "pick_from_side"],
-        "dark blue eraser" : ["pick_from_top", "pick_from_top2"],
-        "none" : ["place_from_top", "place_from_side", "push_x", "draw_x"]
+        "black rectangular eraser" : ["pick_from_top", "pick_from_top2"],
+        "blue rag" : ["pick_from_top", "pick_from_top2"],
+        "none" : ["place_from_side", "push_x", "push_y", "draw_x"]
     },
     "Sweeping" : {
         "red block" : ["pick_from_top", "pick_from_side", "push_x"],
@@ -80,5 +81,15 @@
         "white handle" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
         "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
         "none" : ["place_from_top", "place_from_side", "pour", "pour_from_side"]
+    },
+    "Cheese" : {
+        "round blue bowl" : ["pick_from_top", "place_from_top", "push_y"],
+        "white cheese pieces" : ["pick_from_top", "place_from_top"],
+        "none" : ["place_from_top", "place_from_diag", "pour", "grate"]
+    },
+    "PK" : {
+        "orange" : ["push_x", "push_y"],
+        "red stick": ["pick_from_top", "pick_from_side2"],
+        "none" : ["place_from_top", "place_from_diag"]
     }
 }

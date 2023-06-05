@@ -2,7 +2,7 @@
     "Breakfast" : {
         "slice of bread" : ["pick_from_top", "pick_from_side", "pick_from_side2", "push_x"],
         "dark brown handle" : ["pick_from_top", "pick_from_side", "push_x"],
-        "tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
+        "round tan pitcher" : ["pick_from_top", "pick_from_side", "push_x"],
         "none" : ["place_from_top", "place_from_side", "place_from_diag", "pour_from_side"]
     },
     "TableSetting" : {
@@ -88,7 +88,7 @@
         "none" : ["place_from_top", "place_from_diag", "pour", "grate"]
     },
     "PK" : {
-        "orange" : ["push_x", "push_y"],
+        "orange ball" : ["push_x", "push_y"],
         "red stick": ["pick_from_top", "pick_from_side2"],
         "none" : ["place_from_top", "place_from_diag"]
     }

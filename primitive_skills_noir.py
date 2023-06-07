@@ -865,7 +865,8 @@ class PrimitiveSkill:
 
         # goal quat
         # goal_quat = [-0.47400907, -0.00888116, 0.0487085, 0.87912697]
-        goal_quat = [-0.26835766,  0.0294289,   0.01814095,  0.9626988]
+        # goal_quat = [-0.26835766,  0.0294289,   0.01814095,  0.9626988]
+        goal_quat = [-0.6398792,   0.03178734,  0.03508548,  0.76701576]
         self.rehome_q = np.append(self.reset_joint_positions["from_top"], 1.0) 
 
         sequence = [

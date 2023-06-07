@@ -1,4 +1,11 @@
 {
+    "Hotpot" : {
+        "green handle" : ["pick_from_top", "pick_from_side", "push_x"],
+        "vegetables" : ["pick_from_top", "pick_from_side", "push_y"],
+        "red bowl" : ["pick_from_top", "pick_from_side", "push_y"],
+        "blue rectangular switch" : ["push_x", "push_y", "push_z"],
+        "none" : ["push_z", "pour", "place_from_top", "place_from_diag"]
+    },
     "Breakfast" : {
         "slice of bread" : ["pick_from_top", "pick_from_side", "pick_from_side2", "push_x"],
         "dark brown handle" : ["pick_from_top", "pick_from_side", "push_x"],

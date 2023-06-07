@@ -42,8 +42,8 @@ def main(args):
     texts.remove("none")
     print("looking for\n", texts)
     coords = detector.get_obj_pixel_coord(
-        # img_array=cv2.imread("photos/_camera2.png"),
-        img_array=cv2.imread("param_selection_img2.png"),
+        img_array=cv2.imread("photos/_camera2.png"),
+        # img_array=cv2.imread("param_selection_img2.png"),
         texts=texts,
         thresholds=[0.002]*len(texts),
         debug=True,

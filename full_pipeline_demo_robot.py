@@ -151,7 +151,7 @@ class FullPipelineDemo:
                 pix_pts, world_pts = self.detection_utils.get_points_on_z(world_xy=world_xy, img_array=sideview_img, camera_id=side_camera_id, max_height=0.75)
                 world_z = float(input("input z param"))
                 params.append(world_z)
-                
+
                 # ############### choose z ###############
                 # # discretize z coordinate and save image visualizing the discrete points
                 # pix_pts, world_pts = self.detection_utils.get_points_on_z(world_xy=world_xy, img_array=sideview_img, camera_id=side_camera_id, max_height=0.75)
@@ -275,6 +275,7 @@ if __name__ == "__main__":
     parser.add_argument("--record", action="store_true") # whether to record data
     parser.add_argument("--save_dir", type=str, default="robot_standalone_experiments")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--skipobj", action="store_true")
     args = parser.parse_args()
 
     main(args)

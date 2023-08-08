@@ -98,5 +98,19 @@
         "orange ball" : ["push_x", "push_y"],
         "red stick": ["pick_from_top", "pick_from_side2"],
         "none" : ["place_from_top", "place_from_diag"]
+    },
+    "IroningDemo" : {
+        "mini iron" : ["pick_from_top", "pick_from_side", "pick_from_side2"],
+        "none" : ["push_y", "place_from_top", "place_from_side", "push_x"]
+    },
+    "WateringDemo" : {
+        "bowl" : ["pick_from_top", "pick_from_side", "push_x", "push_y"],
+        "none" : ["place_from_top", "place_from_side", "pour", "pour_from_side"]
+    },
+    "TictactoeDemo" : {
+        "marker" : ["pick_from_top", "pick_from_side"],
+        "eraser" : ["pick_from_top", "pick_from_top2"],
+        "blue rag" : ["pick_from_top", "pick_from_top2"],
+        "none" : ["place_from_side", "push_x", "push_y", "draw_x"]
     }
 }

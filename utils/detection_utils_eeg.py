@@ -111,10 +111,10 @@ class DetectionUtils:
         self.top_down_corr = {
             # NOTE : Change "pix" coordinates to match cropping. No need to change "world"
             "pix" : [ 
-                [16.0, 35.0], # pixel coordinate of top left cross in image (vertical image axis, horizontal image axis)
-                [341.0, 32.0], # top right cross
-                [341.0, 202.0], # bottom right cross
-                [15.0, 213.0], # bottom left cross
+                [20.0, 28.0], # pixel coordinate of top left cross in image (vertical image axis, horizontal image axis)
+                [343.0, 29.0], # top right cross
+                [344.0, 200.0], # bottom right cross
+                [18.0, 205.0], # bottom left cross
             ],
             "world" : [
                 [0.27961881, -0.31456524], 
